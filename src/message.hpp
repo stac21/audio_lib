@@ -5,11 +5,18 @@
 #include <memory>
 #include <stdexcept>
 
-// This should probably be in a separate library
-
-enum class MessageType : uint32_t {
-	UNKNOWN = 0,
-	TEST = 1
+enum class MessageType {
+	UNKNOWN,         // Unknown message type
+	RESUME,          // Resume the audio stream
+	PAUSE,           // Pause the audio stream
+	STOP,            // Stop audio playback and shut down the audio thread
+	VOLUME,          // Adjust the volume of the audio stream
+	RESIZE,          // Inform the audio thread that one of its dynamic buffers has been resized on the controller thread
+	EFFECT_ADDED,    // A new effect has been added by the user
+	EFFECT_REMOVED,  // An effect has been removed by the user
+	EFFECT_ENABLED,  // Enable an effect
+	EFFECT_DISABLED, // Disable an effect
+	PLAY_AT          // begin playing at specific time or frame index
 };
 
 class MessageMetadata {
@@ -21,12 +28,9 @@ public:
 		m_type(MessageType::UNKNOWN)
 	{ }
 
-	MessageMetadata(const MessageMetadata& rhs) = default;
-	MessageMetadata(MessageMetadata&& rhs) = default;
-	MessageMetadata& operator=(const MessageMetadata& rhs) = default;
-	MessageMetadata& operator=(MessageMetadata&& rhs) = default;
-
-	~MessageMetadata() = default;
+	constexpr MessageMetadata(const MessageType type) noexcept :
+		m_type(type)
+	{ }
 
 	constexpr MessageType get_type() const noexcept {
 		return this->m_type;
@@ -37,61 +41,97 @@ public:
 
 class Message {
 public:
-	/// 61,440 bytes. 60 Kb. Literally just chose this at random
-	static constexpr size_t MAX_MESSAGE_SIZE                = 60 * 1024;
-	static constexpr char   MAX_MESSAGE_SIZE_EXCEEDED_MSG[] = "Max Message Size Exceeded. Message Size: ";
+	/// Half of 1 Kb to be safe. This can be reevaluated later if needs be
+	static constexpr size_t MAX_MESSAGE_SIZE = 512;
 
 private:
-	MessageMetadata m_metadata;
-	uint8_t         m_data[MAX_MESSAGE_SIZE] = { 0 };
-	size_t          m_data_size;
+	MessageMetadata metadata;
+	char            payload[MAX_MESSAGE_SIZE];
+	size_t          payload_size;
+
+	/**
+	 * @brief Copy the size in bytes specified by size from data into the payload
+	 * @param data Source of the data payload
+	 * @param size Size in bytes to copy from the data payload
+	 * @return True if copy was successful, false if data was a nullptr or the size was greater than MAX_MESSAGE_SIZE
+	 */
+	bool set_payload(const void* const data, const size_t size);
 
 public:
-	template<typename T>
-	Message(const MessageMetadata& metadata, const T& data) :
-		m_metadata(metadata),
-		m_data(),
-		m_data_size(sizeof(data)) {
+	constexpr Message() :
+		metadata(),
+		payload{ 0 },
+		payload_size(0)
+	{ }
 
-		if (this->m_data_size > Message::MAX_MESSAGE_SIZE) {
-			throw std::out_of_range(MAX_MESSAGE_SIZE_EXCEEDED_MSG + this->m_data_size);
+	template<typename _T> requires (sizeof(_T) <= MAX_MESSAGE_SIZE)
+	Message(const MessageMetadata& metadata, _T&& data) :
+		metadata(metadata),
+		payload(),
+		payload_size() {
+
+		/*
+		 * The size of data is already checked at compile-time, so the only
+		 * way this can fail is if data == nullptr
+		 */
+		bool set_payload_result = this->set_payload(data);
+
+		if constexpr (std::is_pointer_v<_T>) {
+			if (!set_payload_result) {
+				throw std::runtime_error("Null pointer passed in as data");
+			}
 		}
-
-		memcpy(this->m_data, &data, this->m_data_size);
 	}
-
-	Message(const MessageMetadata& metadata, const void* const data, const size_t size);
-
-	Message(const Message& rhs) noexcept = default;
-	Message(Message&& rhs) noexcept = default;
-	Message& operator=(const Message& rhs) noexcept = default;
-	Message& operator=(Message&& rhs) noexcept = default;
 
 	~Message() = default;
 
-	MessageMetadata get_metadata() const noexcept;
-	const uint8_t*  get_data() const noexcept;
-
-	template<typename T>
-	constexpr const T& get_data() const noexcept {
-		return *reinterpret_cast<const T*>(m_data);
+	constexpr const MessageMetadata& get_metadata() const noexcept {
+		return this->metadata;
+	}
+	constexpr const char* get_payload() const noexcept {
+		return this->payload;
 	}
 
-	size_t get_data_size() const noexcept;
+	template<typename _T> requires (sizeof(_T) <= MAX_MESSAGE_SIZE)
+	constexpr const _T& get_payload() const noexcept {
+		/*
+		* in the case of T deducing to a pointer type, this will treat
+		* the message payload as a T**
+		*/
+		return *reinterpret_cast<const _T*>(this->payload);
+	}
+
+	constexpr size_t get_payload_size() const noexcept {
+		return this->payload_size;
+	}
 
 	void set_metadata(const MessageMetadata& metadata) noexcept;
-	void set_data(const void* const data, const size_t size);
 
-	template<typename T>
-	void set_data(const T& data) {
-		this->set_data(&data, sizeof(T));
+	/**
+	 * @brief Set the payload to the passed in data
+	 * @param data Data to copy into the payload
+	 * @eturn True if copy was successful, false if data was nullptr
+	 */
+	template<typename _T> requires (sizeof(_T) <= MAX_MESSAGE_SIZE)
+	bool set_payload(_T&& data) {
+		if constexpr (std::is_pointer_v<_T>) {
+			if (data == nullptr) {
+				return false;
+			}
+		}
+
+		/*
+		 * in the case of T deducing to a pointer type, this will treat
+		 * the message payload as a T**
+		 */
+		return this->set_payload(&data, sizeof(_T));
 	}
 
 	friend void swap(Message& lhs, Message& rhs) noexcept {
 		using std::swap;
 
-		swap(lhs.m_metadata, lhs.m_metadata);
-		swap(lhs.m_data, rhs.m_data);
-		swap(lhs.m_data_size, rhs.m_data_size);
+		swap(lhs.metadata, lhs.metadata);
+		swap(lhs.payload, rhs.payload);
+		swap(lhs.payload_size, rhs.payload_size);
 	}
 };
