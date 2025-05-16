@@ -1,5 +1,7 @@
 #include "message.hpp"
 
+namespace lfmq
+{
 /*
  * Start MessageMetadata class definitions
  */
@@ -30,3 +32,4 @@ void Message::set_metadata(const MessageMetadata& metadata) noexcept {
 /*
  * End Message class definitions
  */
+} // namespace lfmq

@@ -5,6 +5,8 @@
 #include <memory>
 #include <stdexcept>
 
+namespace lfmq
+{
 enum class MessageType {
 	UNKNOWN,         // Unknown message type
 	RESUME,          // Resume the audio stream
@@ -135,3 +137,4 @@ public:
 		swap(lhs.payload_size, rhs.payload_size);
 	}
 };
+} // namespace lfmq
