@@ -2,6 +2,8 @@
 
 #include <atomic>
 
+namespace lfmq
+{
 /*
  * the lock free queue implementation is a circular buffer where the value is
  * never actually "popped" but rather overwritten. the read and write index
@@ -12,7 +14,7 @@
  * index member variable
  */
 template <typename _T, size_t _size> requires std::is_default_constructible_v<_T>
-class LockFreeQueue {
+class SpscQueue {
 	static_assert(_size > 2, "Buffer size must be bigger than 2");
 
 private:
@@ -22,13 +24,13 @@ private:
 	std::atomic<size_t> write_index;
 
 public:
-	LockFreeQueue() :
+	SpscQueue() :
 		read_index(0),
 		write_index(0) {
 	}
 
 	template<typename _T2> requires std::convertible_to<_T2, _T>
-	LockFreeQueue(const LockFreeQueue<_T2, _size>& rhs) {
+	SpscQueue(const SpscQueue<_T2, _size>& rhs) {
 		this->elements = rhs;
 
 		this->read_index = rhs.read_index;
@@ -36,14 +38,14 @@ public:
 	}
 
 	template<typename _T2> requires std::convertible_to<_T2, _T>
-	LockFreeQueue<_T, _size>& operator=(LockFreeQueue<_T2, _size> rhs) {
+	SpscQueue<_T, _size>& operator=(SpscQueue<_T2, _size> rhs) {
 		swap(*this, rhs);
 
 		return *this;
 	}
 
 	template<typename T2> requires std::convertible_to<T2, _T>
-	friend void swap(LockFreeQueue<_T, _size>& lhs, LockFreeQueue<T2, _size>& rhs) {
+	friend void swap(SpscQueue<_T, _size>& lhs, SpscQueue<T2, _size>& rhs) {
 		using namespace std;
 
 		swap(lhs.elements, rhs.elements);
@@ -51,7 +53,7 @@ public:
 		swap(lhs.write_index, rhs.write_index);
 	}
 
-	~LockFreeQueue() = default;
+	~SpscQueue() = default;
 
 	/**
 	 * @brief Insert an element onto the queue
@@ -142,3 +144,4 @@ public:
 		return this->read_index.load() == this->write_index.load();
 	}
 };
+} // namespace lfmq
