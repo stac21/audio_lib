@@ -6,7 +6,7 @@
 #include "dsp_declarations.hpp"
 #include "signals.hpp"
 
-namespace dsp {
+namespace dsp::utils {
 /**
 * @brief Return the value, in dB, of a sample's amplitude
 *
@@ -40,11 +40,19 @@ void write_signal_to_file(const Signal<_sample_t>& signal, const std::string& fi
 	const std::vector<Frame<_sample_t>>& frames = signal.frames();
 
 	for (const Frame<_sample_t>& frame : frames) {
-		file << frame.left_sample() << ", " << frame.right_sample() << "\n";
+		file << frame.get_left_sample() << ", " << frame.get_right_sample() << "\n";
 		file.flush();
 	}
 
 	file.close();
 }
-
-} // namespace dsp
+/**
+ * @brief Get a signal sample index from a time in ms
+ * @param sample_rate Sample rate of the signal
+ * @param time Time in ms
+ * @return Sample index corresponding to the time and sample rate
+ */
+constexpr size_t sample_index_from_time(const sample_rate_t get_sample_rate, const time_ms_t time) {
+	return static_cast<size_t>(time * (get_sample_rate / 1000.0));
+}
+} // namespace dsp::utils

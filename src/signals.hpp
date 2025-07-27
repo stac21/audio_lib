@@ -2,126 +2,100 @@
 
 #include <functional>
 #include <array>
-
-#include <portaudio.h>
+#include <span>
+#include <tuple>
+#include <type_traits>
 
 #include "dsp_declarations.hpp"
 
-// TODO: consider whether the samples should be clamped down to [-1.0, 1.0]
-
 namespace dsp {
-	template<typename _sample_t>
-	class Frame {
-	private:
-		_sample_t m_left_sample;
-		_sample_t m_right_sample;
+template<typename _sample_t>
+struct Frame {
+	_sample_t left_sample  = SAMPLE_SILENCE;
+	_sample_t right_sample = SAMPLE_SILENCE;
 
-	public:
-		constexpr Frame() noexcept :
-			m_left_sample(SAMPLE_SILENCE),
-			m_right_sample(SAMPLE_SILENCE)
-		{ }
+	constexpr Frame() noexcept = default;
 
-		constexpr Frame(const _sample_t left_sample, const _sample_t right_sample) noexcept :
-			m_left_sample(left_sample),
-			m_right_sample(right_sample)
-		{ }
+	constexpr Frame(const _sample_t left_sample, const _sample_t right_sample) noexcept :
+		left_sample(left_sample),
+		right_sample(right_sample)
+	{ }
+};
 
-		Frame(const Frame& rhs) = default;
-		Frame& operator=(const Frame& rhs) = default;
+// TODO make this into a class and initialize the class to SAMPLE_SILENCE by default
+// check ArrTest in main.cpp for guidance on how to do this
+template<typename _sample_t, size_t _capacity>
+class Wave : public std::array<Frame<_sample_t>, _capacity> {
+private:
+	// inherit constructors from parent
+	using __Parent = std::array<Frame<_sample_t>, _capacity>;
+	using __Parent::__Parent;
+	/**
+	 * @brief  Populate the wave with the provided samples
+	 * @param  samples Span of samples to write to the wave
+	 * @param  start_index Start index of the samples to write to the wave
+	 * @
+	 * @return Number of samples written to the wave
+	 */
+	//int32_t populate(const std::span<_sample_t>::iterator samples, const size_t start_index, const size_t len) {
+	//	size_t num_samples_written = 0;
 
-		~Frame() = default;
+	//	for (auto it = begin; it != end && num_samples_written < _capacity; it++) {
+	//		this->at(num_samples_written++) = *it;
+	//	}
 
-		// getters
-		constexpr _sample_t left_sample() const noexcept {
-			return this->m_left_sample;
-		}
+	//	return num_samples_written;
+	//}
+};
 
-		constexpr _sample_t right_sample() const noexcept {
-			return this->m_right_sample;
-		}
+template<typename _sample_t>
+struct Signal {
+	/// Default sample rate in KHz
+	static constexpr sample_rate_t DEFAULT_SAMPLE_RATE = 44100;
+	/// Sample rate in KHz
+	sample_rate_t sample_rate = DEFAULT_SAMPLE_RATE;
+	std::vector<Frame<_sample_t>> frames;
 
-		// setters
-		void set_left_sample(const _sample_t left_sample) noexcept {
-			this->m_left_sample = left_sample;
-		}
+	Signal() = default;
 
-		void set_right_sample(const _sample_t right_sample) noexcept {
-			this->m_right_sample = right_sample;
-		}
-	};
+	Signal(const uint32_t sample_rate) :
+		sample_rate(sample_rate)
+	{ }
 
-	// TODO make this into a class and initialize the class to SAMPLE_SILENCE by default
-	// check ArrTest in main.cpp for guidance on how to do this
-	template<typename _sample_t>
-	class Wave : public std::array<Frame<_sample_t>, FRAMES_PER_BUFFER> {
-	public:
-		constexpr Wave() noexcept :
-			std::array<Frame<_sample_t>, FRAMES_PER_BUFFER>{}
-		{ }
-	};
+	Signal(const std::vector<Frame<_sample_t>>& frames) :
+		frames(frames)
+	{ }
 
-	template<typename _sample_t>
-	class Signal {
-	private:
-		uint32_t m_sample_rate;
-		std::vector<Frame<_sample_t>> m_frames;
+	Signal(const uint32_t sample_rate, const std::vector<Frame<_sample_t>>& frames) :
+		sample_rate(sample_rate),
+		frames(frames)
+	{ }
 
-	public:
-		static constexpr uint32_t DEFAULT_SAMPLE_RATE = 44100;
+	///**
+	// * @brief Populate a wave starting at the given sample index
+	// * @param wave The wave to populate
+	// * @param time Time in ms to begin populating the wave from
+	// * @return Range of the sample indices
+	// */
+	//template<size_t _capacity>
+	//int32_t populate_wave(Wave<_sample_t, _capacity>& wave, size_t sample_index) const {
+	//	//const size_t sample_index = time * (this->m_sample_rate / 1000.0);
+	//	// TODO make this return a range where the start is the sample_index and the end is where the wave ends
 
-		Signal() :
-			m_sample_rate(DEFAULT_SAMPLE_RATE),
-			m_frames()
-		{ }
+	//	if (sample_index >= this->frames.size()) {
+	//		return -1;
+	//	}
 
-		Signal(const uint32_t sample_rate) :
-			m_sample_rate(sample_rate),
-			m_frames()
-		{ }
+	//	for (size_t i = 0; i < wave.size() && (sample_index + i) < this->frames.size(); i++) {
+	//		wave.at(i) = this->frames.at(sample_index + i);
+	//	}
 
-		Signal(const std::vector<Frame<_sample_t>>& frames) :
-			m_sample_rate(DEFAULT_SAMPLE_RATE),
-			m_frames(frames)
-		{ }
+	//	return sample_index;
+	//}
+};
+} // namespace dsp
 
-		Signal(const uint32_t sample_rate, const std::vector<Frame<_sample_t>>& frames) :
-			m_sample_rate(sample_rate),
-			m_frames(frames)
-		{ }
-
-		Signal(const Signal& other) = default;
-		Signal& operator=(const Signal& other) = default;
-
-		~Signal() = default;
-
-		const std::vector<Frame<_sample_t>>& frames() const {
-			return this->m_frames;
-		}
-
-		/**
-		* This really shouldn't be a function I think?
-		*/
-		void set_frames(const std::vector<Frame<_sample_t>>& frames) {
-			this->m_frames = frames;
-		}
-
-		/**
-		* @brief Returns a wave, starting at the designated time
-		* in the signal
-		*
-		* @param time the time in seconds to begin the wave
-		*/
-		Wave<_sample_t> make_wave(const time_t time) const {
-			Wave<_sample_t> wave;
-
-			const size_t frame_index = time / this->m_sample_rate;
-
-			for (size_t i = 0; i < wave.size() && i + wave.size() < this->m_frames.size(); i++) {
-				wave[i] = this->m_frames.at(i);
-			}
-
-			return wave;
-		}
-	};
-}
+/// Tuple size specialization for the Wave
+template<typename _sample_t, size_t _capacity>
+struct std::tuple_size<dsp::Wave<_sample_t, _capacity>> : public std::integral_constant<std::size_t, _capacity>
+{};

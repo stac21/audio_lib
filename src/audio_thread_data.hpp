@@ -1,5 +1,9 @@
 #pragma once
 
+#include <complex>
+#include <tuple>
+#include <fftw3.h>
+#include "dsp_declarations.hpp"
 #include "signals.hpp"
 #include "lock_free_queue.hpp"
 
@@ -10,15 +14,23 @@ enum class AudioThreadState {
 	STARTING
 };
 
-class AudioThreadData {
+struct AudioThreadData {
 public:
-	AudioThreadState                                 state            = AudioThreadState::IDLE;
-	const dsp::Signal<dsp::sample_t>*                signal           = nullptr;
-	dsp::Wave<dsp::sample_t, dsp::FRAMES_PER_BUFFER> wave;
-	int32_t                                          sample_index     = 0;
+	AudioThreadState                                   state            = AudioThreadState::IDLE;
+	const dsp::Signal<dsp::sample_t>*                  signal           = nullptr;
+	dsp::Wave<dsp::sample_t, dsp::FRAMES_PER_BUFFER>   wave;
+	int32_t                                            sample_index     = 0;
 	/// Volume of the wave
-	dsp::amplitude_t                                 amplitude_scalar = 1.0;
-	dsp::pitch_t                                     pitch_shift      = 0.0;
+	dsp::amplitude_t                                   amplitude_scalar = 1.0;
+	dsp::pitch_t                                       pitch_shift      = 0.0;
+private:
+	/// Size of the complex wave is the size of the real wave / 2 + 1
+	static constexpr size_t COMPLEX_WAVE_SIZE = std::tuple_size_v<decltype(wave)> / 2 + 1;
+public:
+	dsp::Wave<std::complex<dsp::sample_t>, COMPLEX_WAVE_SIZE> complex_wave;
+	/// TODO implement the dft functionality
+	fftw_plan                                          r2c_plan;
+	fftw_plan                                          c2r_plan;
 };
 
 /*
