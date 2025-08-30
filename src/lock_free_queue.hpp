@@ -13,10 +13,8 @@ namespace lfmq
  * then the queue is full. Else, write to that index and increment the write
  * index member variable
  */
-template <typename _T, size_t _size> requires std::is_default_constructible_v<_T>
+template <typename _T, size_t _size> requires std::is_default_constructible_v<_T> && (_size > 2)
 class SpscQueue {
-	static_assert(_size > 2, "Buffer size must be bigger than 2");
-
 private:
 	_T elements[_size];
 

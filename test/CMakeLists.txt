@@ -14,7 +14,5 @@ add_executable(${MESSAGING_TEST} src/messaging_test.cpp)
 target_link_libraries(${AUDIO_TEST} PRIVATE audio_lib_static::audio_lib_static)
 target_link_libraries(${MESSAGING_TEST} PRIVATE audio_lib_static::audio_lib_static)
 
-target_include_directories(${AUDIO_TEST} PRIVATE ${dep_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(${MESSAGING_TEST} PRIVATE ${dep_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-
-get_target_property(TARGET_INCLUDE_DIR ${AUDIO_TEST} INCLUDE_DIRECTORIES)
+target_include_directories(${AUDIO_TEST} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${MESSAGING_TEST} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

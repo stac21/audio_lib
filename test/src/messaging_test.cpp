@@ -35,32 +35,8 @@ void display_options();
 lfmq::MessageType process_user_input();
 lfmq::SpscQueue<lfmq::Message, 10> g_message_queue;
 
-//struct dummy_struct {
-//	size_t loop_count = 0;
-//	dsp::sample_t samples[dsp::FRAMES_PER_BUFFER];
-//};
-//
-//int32_t dummy_callback(const void* input_buffer, void* output_buffer,
-//                    unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo * time_info,
-//                    PaStreamCallbackFlags status_flags, void* user_data) {
-//	dummy_struct& ds = *static_cast<dummy_struct*>(user_data);
-//	dsp::sample_t* out_buf = static_cast<dsp::sample_t*>(output_buffer);
-//
-//	for (size_t i = 0; i < frames_per_buffer; i++) {
-//		out_buf[i * 2] = ds.samples[i];
-//		out_buf[i * 2 + 1] = ds.samples[i];
-//	}
-//
-//	if (ds.loop_count >= 300) {
-//		return paComplete;
-//	} else {
-//		ds.loop_count++;
-//		return paAbort;
-//	}
-//}
-
 int main() {
-	constexpr char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/test/file.wav";
+	static constexpr char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/test/file.wav";
 	std::optional<dsp::Signal<dsp::sample_t>> signal;
 	signal = read_snd_file(FILE_PATH);
 
@@ -77,80 +53,9 @@ int main() {
 		msg_type = process_user_input();
 	}
 
-	if (!audio_t.valid()) {
-		std::cout << "!audio_t.valid()\n";
-	}
-
-	std::cout << "Exited process loop\n";
-
-	int32_t audio_t_result = audio_t.get();
+	audio_t.wait();
 
 	return 0;
-
-	//PaStreamParameters stream_params;
-	//PaError err;
-
-	//err = Pa_Initialize();
-	//CHECK_PA_ERROR(err);
-
-	//stream_params.device = Pa_GetDefaultOutputDevice();
-	//const PaDeviceInfo* device_info = Pa_GetDeviceInfo(stream_params.device);
-	//if (device_info == nullptr) {
-	//	// TODO return something from this thread instead
-	//	return -1;
-	//}
-	//stream_params.suggestedLatency = device_info->defaultLowOutputLatency;
-	//stream_params.channelCount = dsp::NUM_CHANNELS;
-	//stream_params.sampleFormat = paFloat32;
-	//stream_params.hostApiSpecificStreamInfo = NULL;
-
-	//std::cout << "device_name: " << device_info->name << "\n";
-
-	//// pitch is the frequency of the wave
-	//dsp::sample_t pitch_shift = 1;
-	//// volume is the amplitude of the wave
-	//dsp::sample_t amplitude_shift = 0.3;
-	//constexpr double PI = 3.14159264;
-
-	//dummy_struct ds;
-
-	//for (size_t i = 0; i < dsp::FRAMES_PER_BUFFER; i++) {
-	//	ds.samples[i] = amplitude_shift * (dsp::sample_t)sin(((double)(pitch_shift * i) / (double)dsp::FRAMES_PER_BUFFER) * PI * 2);
-	//}
-
-	//PaStream* stream = NULL;
-
-	//err = Pa_OpenStream(&stream, NULL, &stream_params, dsp::SAMPLE_RATE, dsp::FRAMES_PER_BUFFER,
-	//	paClipOff, dummy_callback, &ds);
-	//CHECK_PA_ERROR(err);
-
-	//err = Pa_StartStream(stream);
-	//CHECK_PA_ERROR(err);
-
-	//while (Pa_IsStreamActive(stream)) {
-	//	constexpr std::chrono::milliseconds SLEEP_TIME(500);
-
-	//	std::this_thread::sleep_for(SLEEP_TIME);
-	//}
-
-	//std::cout << "Past while loop\n";
-
-	//err = Pa_StopStream(stream);
-	//CHECK_PA_ERROR(err);
-
-	//std::cout << "Stopped stream\n";
-
-	//err = Pa_CloseStream(stream);
-	//CHECK_PA_ERROR(err);
-
-	//std::cout << "Closed stream\n";
-
-	//err = Pa_Terminate();
-	//CHECK_PA_ERROR(err)
-
-	//std::cout << "Audio thread finished execution\n";
-
-	//return 0;
 }
 
 int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
@@ -177,6 +82,7 @@ int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
 	AudioThreadData atd;
 
 	atd.state = AudioThreadState::PAUSED;
+	atd.amplitude_scalar = 0.5f;
 
 	atd.signal = &signal;
 
@@ -190,7 +96,7 @@ int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
 	CHECK_PA_ERROR(err);
 
 	while (Pa_IsStreamActive(stream)) {
-		constexpr std::chrono::milliseconds SLEEP_TIME(500);
+		static constexpr std::chrono::milliseconds SLEEP_TIME(500);
 
 		std::this_thread::sleep_for(SLEEP_TIME);
 	}
@@ -261,11 +167,11 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 		// copy wave into output buffer
 		for (size_t i = 0; i < atd.wave.size(); i++) {
 			const dsp::Frame<dsp::sample_t>& curr_frame = atd.wave.at(i);
-
-			if (i * dsp::NUM_CHANNELS + 1 < out_buf_size) {
+			if (i * dsp::NUM_CHANNELS + 1 < out_buf_len) {
 				out_buf[i * dsp::NUM_CHANNELS] = curr_frame.left_sample;
 				out_buf[i * dsp::NUM_CHANNELS + 1] = curr_frame.right_sample;
 			} else {
+				// For debugging purposes. Should be replaced when a better debugging system is devised
 				std::cout << "Exceeded output buffer size\n";
 			}
 		}
