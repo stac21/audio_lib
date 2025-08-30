@@ -11,9 +11,6 @@ message(STATUS "cmake install prefix ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "cmake library path ${CMAKE_LIBRARY_PATH}")
 message(STATUS "cmake system library path ${CMAKE_SYSTEM_LIBRARY_PATH}")
 
-option(BUILD_SHARED_LIBS "Build as a shared library")
-option(BUILD_STATIC_LIBS "Build as a static library")
-option(INSTALL_STATIC_LIBS "Install static library")
 option(BUILD_TESTS "Build Tests")
 
 add_subdirectory(src)
