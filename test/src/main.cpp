@@ -124,7 +124,7 @@ int main() {
 	std::vector<double> right_samples_in;
 
 	do {
-		curr_frames_read = sf_readf_double(sf, buffer.data(), NUM_FRAMES_TO_READ);
+		curr_frames_read = sf_readf_float(sf, buffer.data(), NUM_FRAMES_TO_READ);
 		// insert the read frames into the samples vector
 		for (size_t i = 0; i < buffer.size(); i += 2) {
 			left_samples_in.push_back(buffer.at(i));

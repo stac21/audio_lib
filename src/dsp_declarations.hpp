@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 namespace dsp {
-using sample_t = double;
+using sample_t = float;
 using phase_t = int32_t;
 using frequency_t = double;
 using amplitude_t = double;

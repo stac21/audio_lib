@@ -135,10 +135,12 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 
 	AudioThreadData& atd = *static_cast<AudioThreadData*>(user_data);
 	dsp::sample_t* const out_buf = static_cast<dsp::sample_t*>(output_buffer);
+	const size_t out_buf_len = frames_per_buffer * dsp::NUM_CHANNELS;
 	// size in bytes of out_buf
-	const size_t out_buf_size = sizeof(dsp::sample_t) * frames_per_buffer * dsp::NUM_CHANNELS;
+	const size_t out_buf_size = sizeof(dsp::sample_t) * out_buf_len;
 
 	process_messages(atd, 1);
+
 	// to measure the time it takes to complete this function, there could be a message sent
 	// to the controller thread to signal when the function begins and when the function ends
 	// then the controller thread could record the timstamps of each
@@ -285,7 +287,7 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 	dsp::Frame<dsp::sample_t> curr_frame;
 
 	do {
-		curr_frames_read = sf_readf_double(sf, in_buffer.data(), in_buffer.size());
+		curr_frames_read = sf_readf_float(sf, in_buffer.data(), in_buffer.size());
 		// insert the read frames into the signal
 		for (size_t i = 0; i < in_buffer.size(); i += sf_info.channels) {
 			curr_frame.left_sample = in_buffer.at(i);
