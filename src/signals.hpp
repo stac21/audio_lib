@@ -11,6 +11,8 @@
 namespace dsp {
 template<typename _sample_t>
 struct Frame {
+	using sample_type = _sample_t;
+
 	_sample_t left_sample  = SAMPLE_SILENCE;
 	_sample_t right_sample = SAMPLE_SILENCE;
 
@@ -26,6 +28,9 @@ struct Frame {
 // check ArrTest in main.cpp for guidance on how to do this
 template<typename _sample_t, size_t _capacity>
 class Wave : public std::array<Frame<_sample_t>, _capacity> {
+public:
+	using sample_type = _sample_t;
+
 private:
 	// inherit constructors from parent
 	using __Parent = std::array<Frame<_sample_t>, _capacity>;
@@ -50,6 +55,8 @@ private:
 
 template<typename _sample_t>
 struct Signal {
+	using sample_type = _sample_t;
+
 	/// Default sample rate in KHz
 	static constexpr sample_rate_t DEFAULT_SAMPLE_RATE = 44100;
 	/// Sample rate in KHz
