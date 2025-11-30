@@ -49,3 +49,15 @@ value of the envelope at a given sample index, along with the sample rate. Somet
 There could also likely be a function like the following but I don't really see a point in doing so at the moment.
 Maybe there could be a use case where :
 	_value_t Envelope::calc_sample(time_point)
+
+===REQUIREMENTS THAT WE ARE TRYING TO MEET===
+* the controller thread needs to be able to draw the envelopes in a timeline
+* the audio thread needs to be able to detect when to factor the envelopes into the signal.
+  In other words, when to "play" the envelopes
+
+===WHAT IS NEEDED TO MEET THESE REQUIREMENTS===
+* the controller thread needs to be able to draw the envelopes in a timeline
+	- need a struct containing both a timestamp, where (time = 0) is the start of the "track," and
+* the audio thread needs to be able to detect when to factor the envelopes into the signal.
+  In other words, when to "play" the envelopes
+
