@@ -50,10 +50,6 @@ target_include_directories(${TARGET}
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDE_DIR}>
 )
 
-get_target_property(TARGET_INCLUDE_DIR ${TARGET} INCLUDE_DIRECTORIES)
-
-message(STATUS "Target include dir: ${TARGET_INCLUDE_DIR}")
-
 # Include useful directory helpers for target installation
 include(GNUInstallDirs)
 
