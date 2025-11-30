@@ -28,7 +28,6 @@ set(
 )
 
 add_library(${TARGET}
-    dsp_utils.cpp
     message.cpp
     ${HEADER_FILES}
 )
