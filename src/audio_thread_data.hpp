@@ -5,7 +5,6 @@
 #include <fftw3.h>
 #include "dsp_declarations.hpp"
 #include "signals.hpp"
-#include "lock_free_queue.hpp"
 
 enum class AudioThreadState {
 	PLAYING,

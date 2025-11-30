@@ -1,9 +1,7 @@
 #include <iostream>
 
-#include "message.hpp"
 #include "signals.hpp"
 #include "audio_thread_data.hpp"
-#include "lock_free_queue.hpp"
 #include "dsp_utils.hpp"
 #include "biquad.hpp"
 
@@ -13,6 +11,8 @@
 #include <future>
 #include <limits>
 #include <optional>
+#include <lfmq/message.hpp>
+#include <lfmq/lock_free_queue.hpp>
 
 #define CHECK_PA_ERROR(err)\
 	if (err != paNoError) {\

@@ -6,6 +6,7 @@ find_library(fftw3_LIBRARY_PATH fftw3)
 
 find_package(SndFile REQUIRED)
 find_package(PortAudio REQUIRED)
+find_package(lfmq REQUIRED)
 
 if (BUILD_SHARED_LIBS)
     message("Building as a shared library - yes")
@@ -20,15 +21,14 @@ set(
         dsp_utils.hpp
         dsp_declarations.hpp
         audio_thread_data.hpp
-        lock_free_queue.hpp
-        message.hpp
         signals.hpp
         filters.hpp
         biquad.hpp
+        menu.hpp
 )
 
 add_library(${TARGET}
-    message.cpp
+    menu.cpp
     ${HEADER_FILES}
 )
 add_library(${TARGET}::${TARGET} ALIAS ${TARGET})
@@ -42,6 +42,7 @@ set_target_properties(${TARGET}
 target_link_libraries(${TARGET} PUBLIC PortAudio::portaudio)
 target_link_libraries(${TARGET} PUBLIC SndFile::sndfile)
 target_link_libraries(${TARGET} PUBLIC ${fftw3_LIBRARY_PATH})
+target_link_libraries(${TARGET} PUBLIC lfmq::lfmq)
 
 target_include_directories(${TARGET}
     PUBLIC

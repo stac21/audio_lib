@@ -8,8 +8,8 @@
 #include <fstream>
 
 #include "dsp_declarations.hpp"
-#include "message.hpp"
-#include "lock_free_queue.hpp"
+#include <lfmq/message.hpp>
+#include <lfmq/lock_free_queue.hpp>
 #include "signals.hpp"
 #include "audio_thread_data.hpp"
 
