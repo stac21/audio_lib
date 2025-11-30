@@ -1,0 +1,51 @@
+envelope.get_sample(time_point)
+envelope.get_sample(sample_index)
+
+
+
+envelope.init()
+envelope.set_start_time(time_point)
+
+How I perceive this being used in the controller thread to get the current stage and active status
+for (envelope : envelopes) {
+	if (envelope.is_active_at_time(time_point)) {
+		envelope.get_sample(time_point)
+		envelope.get_stage_at(time_point)
+	}
+}
+
+for (et : envelope_timestamps) {
+	if (et.is_active_at_time())
+}
+
+template<typename _value_t>
+EnvelopeTimestamp {
+private:
+	time_point start
+	time_point end_time
+
+public:
+	envelope<_value_t> envelope
+
+	EnvelopeTimestamp(time_point start, envelope envelope) :
+			start(start),
+			end_time(start + envelope.total_duration)
+			envelope(envelope)
+
+	bool is_time_point_in_range(time_point tp) {
+		return (this->start <= tp <= end_time)
+	}
+
+	uint64_t calc_sample_index(time_point tp, sample_rate_t sample_rate);
+}
+
+The audio thread does not deal in time points but rather in sample indices. Therefore, there should rather be a
+struct where the timestamps are sample indices rather than time points which the audio thread is given. The controller
+thread can use a struct with time_point timestamps.
+
+The AudioThreadData struct contains the audio thread's sample index, and this can be used to determine the sample
+value of the envelope at a given sample index, along with the sample rate. Something like the following could make sense:
+	_value_t Envelope::calc_sample(sample_index, sample_rate);
+There could also likely be a function like the following but I don't really see a point in doing so at the moment.
+Maybe there could be a use case where :
+	_value_t Envelope::calc_sample(time_point)
