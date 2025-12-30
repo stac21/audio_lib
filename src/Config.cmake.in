@@ -1,7 +1,6 @@
 @PACKAGE_INIT@
 
-# TODO change this to be audio_lib
-set(TARGET audio_lib_static)
+set(TARGET stac_audio)
 
 include("${CMAKE_CURRENT_LIST_DIR}/${TARGET}Targets.cmake")
 

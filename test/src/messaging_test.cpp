@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "signals.hpp"
-#include "audio_thread_data.hpp"
-#include "dsp_utils.hpp"
-#include "biquad.hpp"
+#include <stac_audio/signals.hpp>
+#include <stac_audio/audio_thread_data.hpp>
+#include <stac_audio/dsp_utils.hpp>
+#include <stac_audio/biquad.hpp>
 
 #include <portaudio.h>
 #include <sndfile.h>

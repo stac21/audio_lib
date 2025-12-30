@@ -6,12 +6,12 @@
 #include <sndfile.h>
 #include <portaudio.h>
 #include <fstream>
-
-#include "dsp_declarations.hpp"
 #include <lfmq/message.hpp>
 #include <lfmq/lock_free_queue.hpp>
-#include "signals.hpp"
-#include "audio_thread_data.hpp"
+
+#include <stac_audio/dsp_declarations.hpp>
+#include <stac_audio/signals.hpp>
+#include <stac_audio/audio_thread_data.hpp>
 
 #include <complex>
 #include <fftw3.h>
