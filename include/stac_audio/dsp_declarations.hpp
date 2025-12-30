@@ -6,7 +6,7 @@ namespace dsp {
 using sample_t = float;
 using phase_t = int32_t;
 using frequency_t = double;
-using amplitude_t = double;
+using amplitude_t = float;
 using pitch_t = double;
 using time_t = double;
 using time_ms_t = uint64_t;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 #include <array>
 #include <span>
 #include <tuple>
@@ -26,7 +27,7 @@ struct Frame {
 
 // TODO make this into a class and initialize the class to SAMPLE_SILENCE by default
 // check ArrTest in main.cpp for guidance on how to do this
-template<typename _sample_t, size_t _capacity>
+template<typename _sample_t, std::size_t _capacity>
 class Wave : public std::array<Frame<_sample_t>, _capacity> {
 public:
 	using sample_type = _sample_t;
@@ -65,11 +66,11 @@ struct Signal {
 
 	Signal() = default;
 
-	Signal(const uint32_t sample_rate) :
+	explicit Signal(const uint32_t sample_rate) :
 		sample_rate(sample_rate)
 	{ }
 
-	Signal(const std::vector<Frame<_sample_t>>& frames) :
+	explicit Signal(const std::vector<Frame<_sample_t>>& frames) :
 		frames(frames)
 	{ }
 
@@ -103,6 +104,6 @@ struct Signal {
 } // namespace dsp
 
 /// Tuple size specialization for the Wave
-template<typename _sample_t, size_t _capacity>
+template<typename _sample_t, std::size_t _capacity>
 struct std::tuple_size<dsp::Wave<_sample_t, _capacity>> : public std::integral_constant<std::size_t, _capacity>
 {};

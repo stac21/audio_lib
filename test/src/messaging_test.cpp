@@ -38,10 +38,10 @@ lfmq::SpscQueue<lfmq::Message, 10> g_message_queue;
 int main() {
 	static constexpr char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/test/file.wav";
 	std::optional<dsp::Signal<dsp::sample_t>> signal;
-	signal = read_snd_file(FILE_PATH);
+	signal = read_snd_file(&FILE_PATH[0]);
 
 	if (!signal.has_value()) {
-		std::cout << "Unable to open file for reading: " << FILE_PATH << "\n";
+		std::cout << "Unable to open file for reading: " << &FILE_PATH[0] << "\n";
 		return 1;
 	}
 
@@ -68,14 +68,14 @@ int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
 
 	stream_params.device = Pa_GetDefaultOutputDevice();
 	const PaDeviceInfo* device_info = Pa_GetDeviceInfo(stream_params.device);
-	if (device_info == NULL) {
+	if (device_info == nullptr) {
 		std::cout << "Error fetching device_info\n";
 		return -1;
 	}
 	stream_params.suggestedLatency = device_info->defaultLowOutputLatency;
 	stream_params.channelCount = dsp::NUM_CHANNELS;
 	stream_params.sampleFormat = paFloat32;
-	stream_params.hostApiSpecificStreamInfo = NULL;
+	stream_params.hostApiSpecificStreamInfo = nullptr;
 
 	std::cout << "device_name: " << device_info->name << "\n";
 
@@ -85,16 +85,16 @@ int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
 
 	atd.signal = &signal;
 
-	PaStream* stream = NULL;
+	PaStream* stream = nullptr;
 
-	err = Pa_OpenStream(&stream, NULL, &stream_params, atd.signal->sample_rate, dsp::FRAMES_PER_BUFFER,
+	err = Pa_OpenStream(&stream, nullptr, &stream_params, atd.signal->sample_rate, dsp::FRAMES_PER_BUFFER,
 		paClipOff, audio_thread_callback, &atd);
 	CHECK_PA_ERROR(err);
 
 	err = Pa_StartStream(stream);
 	CHECK_PA_ERROR(err);
 
-	while (Pa_IsStreamActive(stream)) {
+	while (Pa_IsStreamActive(stream) != 0) {
 		static constexpr std::chrono::milliseconds SLEEP_TIME(500);
 
 		std::this_thread::sleep_for(SLEEP_TIME);
@@ -124,10 +124,11 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 		unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo* time_info,
 		PaStreamCallbackFlags status_flags, void* user_data) {
 	PaStreamCallbackResult ret = paContinue;
-	if (user_data == NULL) {
+	if (user_data == nullptr) {
 		std::cout << "user_data is null\n";
 		return paComplete;
-	} else if (output_buffer == NULL) {
+	}
+	if (output_buffer == nullptr) {
 		std::cout << "output_buffer is null\n";
 		return paComplete;
 	}
@@ -168,8 +169,9 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 		// copy wave into output buffer
 		for (size_t i = 0; i < atd.wave.size(); i++) {
 			const dsp::Frame<dsp::sample_t>& curr_frame = atd.wave.at(i);
+
 			if (i * dsp::NUM_CHANNELS + 1 < out_buf_len) {
-				out_buf[i * dsp::NUM_CHANNELS] = curr_frame.left_sample;
+				out_buf[i * dsp::NUM_CHANNELS]     = curr_frame.left_sample;
 				out_buf[i * dsp::NUM_CHANNELS + 1] = curr_frame.right_sample;
 			} else {
 				// For debugging purposes. Should be replaced when a better debugging system is devised
@@ -182,7 +184,7 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 		// TODO figure out whether this memset only needs to occur once or whether
 		// it needs to occur every time the audio callback gets called.
 		// Answer: This almost certainly needs to be called once, though is cheap so who really cares
-		memset(out_buf, dsp::SAMPLE_SILENCE, out_buf_size);
+		memset(out_buf, static_cast<int>(dsp::SAMPLE_SILENCE), out_buf_size);
 		break;
 	case AudioThreadState::IDLE:
 		std::cout << "Idle. Exiting loop\n";
