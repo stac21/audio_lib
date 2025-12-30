@@ -82,7 +82,6 @@ int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
 	AudioThreadData atd;
 
 	atd.state = AudioThreadState::PAUSED;
-	atd.amplitude_scalar = 0.5f;
 
 	atd.signal = &signal;
 
