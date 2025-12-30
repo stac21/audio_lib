@@ -248,7 +248,11 @@ bool process_play_message(AudioThreadData& atd, const dsp::time_ms_t time) {
 }
 
 bool process_pause_message(AudioThreadData& atd) {
-	atd.state = AudioThreadState::PAUSED;
+	if (atd.state == AudioThreadState::PAUSED) {
+		atd.state = AudioThreadState::PLAYING;
+	} else if (atd.state == AudioThreadState::PLAYING){
+		atd.state = AudioThreadState::PAUSED;
+	}
 
 	return true;
 }
@@ -307,8 +311,8 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 
 void display_options() {
 	std::cout << "Choose one of the following options:\n"
-		<< "1. Play Audio\n"
-		<< "2. Pause Audio\n"
+		<< "1. Play Audio From Beginning\n"
+		<< "2. Pause/Resume Audio\n"
 		<< "3. Toggle Mute\n"
 		<< "4. Stop\n"
 		<< "5. Configure Effects\n"
