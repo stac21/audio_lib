@@ -1,35 +1,36 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(audio_lib VERSION 0.0.1 LANGUAGES CXX)
+project(stac_audio VERSION 0.0.1 LANGUAGES CXX)
 
 find_library(fftw3_LIBRARY_PATH fftw3)
 
 find_package(SndFile REQUIRED)
 find_package(PortAudio REQUIRED)
+find_package(lfmq REQUIRED)
+
+set(TARGET stac_audio)
 
 if (BUILD_SHARED_LIBS)
     message("Building as a shared library - yes")
-    set(TARGET audio_lib)
 else ()
     message("Building as a static library - yes")
-    set(TARGET audio_lib_static)
 endif()
+
+set(INCLUDE_DIR ../include/stac_audio)
 
 set(
     HEADER_FILES
-        dsp_utils.hpp
-        dsp_declarations.hpp
-        audio_thread_data.hpp
-        lock_free_queue.hpp
-        message.hpp
-        signals.hpp
-        filters.hpp
-        biquad.hpp
+        ${INCLUDE_DIR}/dsp_utils.hpp
+        ${INCLUDE_DIR}/dsp_declarations.hpp
+        ${INCLUDE_DIR}/audio_thread_data.hpp
+        ${INCLUDE_DIR}/signals.hpp
+        ${INCLUDE_DIR}/filters.hpp
+        ${INCLUDE_DIR}/biquad.hpp
+        ${INCLUDE_DIR}/menu.hpp
 )
 
 add_library(${TARGET}
-    dsp_utils.cpp
-    message.cpp
+    menu.cpp
     ${HEADER_FILES}
 )
 add_library(${TARGET}::${TARGET} ALIAS ${TARGET})
@@ -43,16 +44,15 @@ set_target_properties(${TARGET}
 target_link_libraries(${TARGET} PUBLIC PortAudio::portaudio)
 target_link_libraries(${TARGET} PUBLIC SndFile::sndfile)
 target_link_libraries(${TARGET} PUBLIC ${fftw3_LIBRARY_PATH})
+target_link_libraries(${TARGET} PUBLIC lfmq::lfmq)
 
 target_include_directories(${TARGET}
     PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}>
 )
-
-get_target_property(TARGET_INCLUDE_DIR ${TARGET} INCLUDE_DIRECTORIES)
-
-message(STATUS "Target include dir: ${TARGET_INCLUDE_DIR}")
 
 # Include useful directory helpers for target installation
 include(GNUInstallDirs)
@@ -70,7 +70,7 @@ install(
 # Configure include header install destination and files
 install(
     FILES ${HEADER_FILES}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${TARGET}
 )
 
 # Actually install the Targets file

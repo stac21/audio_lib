@@ -12,13 +12,19 @@ namespace dsp::utils {
 *
 * @param sample the sample, in amplitude scale, to get the dB value of
 */
-sample_t amp_to_db(sample_t sample);
+template<typename _sample_t>
+_sample_t amp_to_db(_sample_t sample) {
+	return static_cast<_sample_t>(20 * std::log10(sample));
+}
 /**
 * @brief Return the value, in amplitude scale, of a sample's dB value
 *
 * @param sample the sample, in dB, to get the amplitude scale value of
 */
-sample_t db_to_amp(sample_t sample);
+template<typename _sample_t>
+_sample_t db_to_amp(_sample_t sample) {
+	return static_cast<_sample_t>(std::pow(10, sample / 20));
+}
 /**
 * @brief Write the specified signal's frame data to the specified file.
 * Data will be in csv format with left channel data as the first element
