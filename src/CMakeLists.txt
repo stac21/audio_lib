@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(stac_audio VERSION 0.0.1 LANGUAGES CXX)
+project(stac_audio VERSION 0.0.1 LANGUAGES CXX C)
 
 find_library(fftw3_LIBRARY_PATH fftw3)
 

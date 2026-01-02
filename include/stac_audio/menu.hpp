@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstddef>
 #include <string>
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <cstdint>
 
 class MenuOption {
 private:
