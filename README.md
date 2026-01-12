@@ -1,7 +1,7 @@
 # audio_lib
 Library of Audio Related Utilities
 
-Requires the portaudio, sndfile, and fftw3 libraries to be installed onto the system
+Requires the lfmq (my own library), portaudio, sndfile, and fftw3 libraries to be installed onto the system
 
 ## Build Instructions:
 ```
