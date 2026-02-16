@@ -24,8 +24,6 @@ set(
         ${INCLUDE_DIR}/dsp_declarations.hpp
         ${INCLUDE_DIR}/audio_thread_data.hpp
         ${INCLUDE_DIR}/signals.hpp
-        ${INCLUDE_DIR}/filters.hpp
-        ${INCLUDE_DIR}/biquad.hpp
         ${INCLUDE_DIR}/menu.hpp
 )
 
