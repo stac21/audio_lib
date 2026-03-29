@@ -1,8 +1,10 @@
 #include <iostream>
 
+#include <stac_audio/dsp_declarations.hpp>
 #include <stac_audio/signals.hpp>
 #include <stac_audio/audio_thread_data.hpp>
 #include <stac_audio/dsp_utils.hpp>
+#include <stac_audio/tone.hpp>
 
 #include <portaudio.h>
 #include <sndfile.h>
@@ -10,6 +12,7 @@
 #include <future>
 #include <limits>
 #include <optional>
+#include <numbers>
 #include <lfmq/message.hpp>
 #include <lfmq/lock_free_queue.hpp>
 
@@ -29,13 +32,16 @@ bool process_play_message(AudioThreadData& atd, const dsp::time_ms_t time);
 bool process_pause_message(AudioThreadData& atd);
 bool process_volume_message(AudioThreadData& atd);
 bool process_stop_message(AudioThreadData& atd);
+bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* signal_ptr);
 std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path);
+std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
 void display_options();
 lfmq::MessageType process_user_input();
 lfmq::SpscQueue<lfmq::Message, 10> g_message_queue;
 
 int main() {
 	static constexpr char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/test/file.wav";
+	//static constexpr char FILE_PATH[] = "/home/grant/projects/git/audio_lib/test/file.wav";
 	std::optional<dsp::Signal<dsp::sample_t>> signal;
 	signal = read_snd_file(&FILE_PATH[0]);
 
@@ -226,6 +232,12 @@ bool process_message(AudioThreadData& atd, const lfmq::Message& msg) {
 	case lfmq::MessageType::STOP:
 		successfully_processed = process_stop_message(atd);
 		break;
+	case lfmq::MessageType::EFFECT_ADDED:
+	{
+		const dsp::Signal<dsp::sample_t>* const signal_ptr = msg.get_payload<const dsp::Signal<dsp::sample_t>* const>();
+		successfully_processed = process_effect_added(atd, signal_ptr);
+		break;
+	}
 	default:
 		successfully_processed = false;
 		break;
@@ -271,6 +283,14 @@ bool process_stop_message(AudioThreadData& atd) {
 	return true;
 }
 
+bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* const signal_ptr) {
+	atd.state        = AudioThreadState::PLAYING;
+	atd.sample_index = 0;
+	atd.signal       = signal_ptr;
+
+	return true;
+}
+
 std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path) {
 	SF_INFO sf_info;
 	SNDFILE* sf = sf_open(file_path.c_str(), SFM_READ, &sf_info);
@@ -287,7 +307,7 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 
 	sf_count_t curr_frames_read = 0;
 	constexpr sf_count_t NUM_FRAMES_TO_READ = 256;
-	std::array<dsp::sample_t, NUM_FRAMES_TO_READ> in_buffer;
+	std::array<dsp::sample_t, NUM_FRAMES_TO_READ> in_buffer = {};
 	dsp::Frame<dsp::sample_t> curr_frame;
 
 	do {
@@ -309,13 +329,52 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 	return signal;
 }
 
+std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, const dsp::time_ms_t duration) {
+	// important to note that the phase of the end resulting signal
+	// does not matter, but the relative phase of the harmonic signals
+	// does matter as they can constructively or destructively combine
+	// to make the signal louder or quieter. Also could change the
+	// timbre of the resulting signal
+	// https://pudding.cool/2018/02/waveforms/
+	static constexpr float ms_to_seconds = 1000.0f;
+	const size_t num_samples_in_signal = static_cast<size_t>((duration / ms_to_seconds) * sample_rate);
+	std::cout << "num_samples_in_signal: " << num_samples_in_signal << "\n";
+	std::cout << "frequency: " << frequency << "\n";
+
+	dsp::Signal<dsp::sample_t> signal(sample_rate);
+	try {
+		signal.frames.reserve(num_samples_in_signal);
+	} catch (std::bad_alloc& e) {
+		// the requested buffer size was too large to allocate
+		return std::nullopt;
+	}
+
+	dsp::sample_t curr_sample = 0.0;
+
+	for (size_t sample_index = 0; sample_index < num_samples_in_signal; sample_index++) {
+		curr_sample = static_cast<dsp::sample_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
+
+		signal.frames.emplace_back(curr_sample, curr_sample);
+	}
+
+	return signal;
+}
+
+enum class UserChoices : uint8_t {
+	PLAY_AUDIO_FROM_BEGINNING = 1,
+	PAUSE_OR_RESUME_AUDIO     = 2,
+	TOGGLE_MUTE               = 3,
+	STOP_PLAYBACK             = 4,
+	PLAY_NOTE                 = 5
+};
+
 void display_options() {
 	std::cout << "Choose one of the following options:\n"
-		<< "1. Play Audio From Beginning\n"
-		<< "2. Pause/Resume Audio\n"
-		<< "3. Toggle Mute\n"
-		<< "4. Stop\n"
-		<< "5. Configure Effects\n"
+		<< static_cast<int32_t>(UserChoices::PLAY_AUDIO_FROM_BEGINNING) << ". Play Audio From Beginning\n"
+		<< static_cast<int32_t>(UserChoices::PAUSE_OR_RESUME_AUDIO)     << ". Pause/Resume Audio\n"
+		<< static_cast<int32_t>(UserChoices::TOGGLE_MUTE)               << ". Toggle Mute\n"
+		<< static_cast<int32_t>(UserChoices::STOP_PLAYBACK)             << ". Stop\n"
+		<< static_cast<int32_t>(UserChoices::PLAY_NOTE)                 << ". Play Note\n"
 		<< "Selected option: ";
 }
 
@@ -323,27 +382,61 @@ lfmq::MessageType process_user_input() {
 	std::string user_input;
 	std::cin >> user_input;
 
-	uint8_t option;
+	uint8_t option{};
 	std::from_chars_result result = std::from_chars(user_input.data(),
 		user_input.data() + user_input.size(), option);
+
+	// error while parsing the input
+	if (result.ec != std::errc()) {
+		return lfmq::MessageType::UNKNOWN;
+	}
 
 	lfmq::Message msg;
 	lfmq::MessageMetadata msg_metadata(lfmq::MessageType::UNKNOWN);
 
-	switch (option) {
-	case 1:
+	switch (static_cast<UserChoices>(option)) {
+	case UserChoices::PLAY_AUDIO_FROM_BEGINNING:
 		msg_metadata.set_type(lfmq::MessageType::PLAY_AT);
 		// the cast to uint64_t is necessary so the Message is able to correctly deduce the type
 		msg.set_payload(static_cast<dsp::time_ms_t>(0));
 		break;
-	case 2:
+	case UserChoices::PAUSE_OR_RESUME_AUDIO:
 		msg_metadata.set_type(lfmq::MessageType::PAUSE);
 		break;
-	case 3:
+	case UserChoices::TOGGLE_MUTE:
 		msg_metadata.set_type(lfmq::MessageType::VOLUME);
 		break;
-	case 4:
+	case UserChoices::STOP_PLAYBACK:
 		msg_metadata.set_type(lfmq::MessageType::STOP);
+		break;
+	case UserChoices::PLAY_NOTE:
+		// TODO remove the message types from lfmq and place them in
+		// the controller layer
+		if (std::optional<stac::Tone> toneOpt = stac::Tone::create(stac::Note::A, stac::Octave::TWO); toneOpt.has_value()) {
+			const stac::Tone& tone = toneOpt.value();
+
+			msg_metadata.set_type(lfmq::MessageType::EFFECT_ADDED);
+
+			static constexpr dsp::time_ms_t signal_duration = 3000;
+
+			// TODO this should really go into a controller-type class
+			// but this will do for now
+			//
+			// It's fine to not check has_value here because I know that the operation will succeed
+			// but the result of a signal generation should be checked generally
+			static dsp::Signal<dsp::sample_t> signal = generate_sin_wave(tone.frequency(), dsp::SAMPLE_RATE, signal_duration).value();
+			const dsp::utils::WriteResult write_result = dsp::utils::write_signal_to_file(signal, "/home/grant/projects/git/audio_lib/plots/signal.sig");
+
+			std::cout << "result of writing signal to file: " << static_cast<int32_t>(write_result) << "\n";
+
+			msg.set_payload(&signal);
+
+			std::cout << "Made effect added message\n";
+		} else {
+			std::cout << "Unable to create tone\n";
+
+			msg_metadata.set_type(lfmq::MessageType::UNKNOWN);
+		}
 		break;
 	default:
 		msg_metadata.set_type(lfmq::MessageType::UNKNOWN);
