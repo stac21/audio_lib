@@ -1,3 +1,4 @@
 build/
 linux_build/
 .vscode/
+plots/
