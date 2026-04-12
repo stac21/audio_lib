@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <cmath>
 #include <fstream>
 
@@ -13,7 +14,7 @@ namespace dsp::utils {
 * @param sample the sample, in amplitude scale, to get the dB value of
 */
 template<typename _sample_t>
-_sample_t amp_to_db(_sample_t sample) {
+constexpr _sample_t amp_to_db(_sample_t sample) {
 	return static_cast<_sample_t>(20 * std::log10(sample));
 }
 /**
@@ -22,9 +23,16 @@ _sample_t amp_to_db(_sample_t sample) {
 * @param sample the sample, in dB, to get the amplitude scale value of
 */
 template<typename _sample_t>
-_sample_t db_to_amp(_sample_t sample) {
+constexpr _sample_t db_to_amp(_sample_t sample) {
 	return static_cast<_sample_t>(std::pow(10, sample / 20));
 }
+
+enum class WriteResult : uint8_t {
+	SUCCESS      = 0,
+	OPEN_FAILED  = 1,
+	FLUSH_FAILED = 2
+};
+
 /**
 * @brief Write the specified signal's frame data to the specified file.
 * Data will be in csv format with left channel data as the first element
@@ -37,20 +45,32 @@ _sample_t db_to_amp(_sample_t sample) {
 * @param file_path the path of the file to write the signal to
 */
 template<typename _sample_t>
-void write_signal_to_file(const Signal<_sample_t>& signal, const std::string& file_path) {
-	std::fstream file;
-	file.exceptions(std::ios_base::badbit);
+WriteResult write_signal_to_file(const Signal<_sample_t>& signal, const std::string& file_path) {
+	std::fstream file(file_path, std::ios_base::out | std::ios_base::trunc);
 
-	file.open(file_path, std::ios_base::out | std::ios_base::trunc);
-
-	const std::vector<Frame<_sample_t>>& frames = signal.frames();
-
-	for (const Frame<_sample_t>& frame : frames) {
-		file << frame.get_left_sample() << ", " << frame.get_right_sample() << "\n";
-		file.flush();
+	if (!file.is_open()) {
+		return WriteResult::OPEN_FAILED;
 	}
 
-	file.close();
+	file << signal.sample_rate << "\n";
+
+	for (size_t i = 0; i < signal.frames.size(); i++) {
+		static constexpr size_t num_frames_to_write_before_flushing = 50;
+
+		const dsp::Frame<_sample_t>& frame = signal.frames.at(i);
+
+		file << frame.left_sample << "," << frame.right_sample << "\n";
+
+		if (i % num_frames_to_write_before_flushing == 0) {
+			file.flush();
+
+			if (file.bad()) {
+				return WriteResult::FLUSH_FAILED;
+			}
+		}
+	}
+
+	return WriteResult::SUCCESS;
 }
 /**
  * @brief Get a signal sample index from a time in ms
@@ -58,7 +78,7 @@ void write_signal_to_file(const Signal<_sample_t>& signal, const std::string& fi
  * @param time Time in ms
  * @return Sample index corresponding to the time and sample rate
  */
-constexpr size_t sample_index_from_time(const sample_rate_t get_sample_rate, const time_ms_t time) {
-	return static_cast<size_t>(time * (get_sample_rate / 1000.0));
+constexpr size_t sample_index_from_time(const sample_rate_t sample_rate, const time_ms_t time) {
+	return static_cast<size_t>(time * (sample_rate / 1000.0));
 }
 } // namespace dsp::utils

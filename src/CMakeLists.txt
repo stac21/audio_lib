@@ -25,10 +25,12 @@ set(
         ${INCLUDE_DIR}/audio_thread_data.hpp
         ${INCLUDE_DIR}/signals.hpp
         ${INCLUDE_DIR}/menu.hpp
+        ${INCLUDE_DIR}/tone.hpp
 )
 
 add_library(${TARGET}
     menu.cpp
+    tone.cpp
     ${HEADER_FILES}
 )
 add_library(${TARGET}::${TARGET} ALIAS ${TARGET})
