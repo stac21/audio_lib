@@ -22,7 +22,7 @@ struct Instrument {
 	 * second argument is the sample rate of the signal, third argument is the number of samples in the signal.
 	 * Functions are expected to have the number of harmonics and other characeristics of the signal contained within them
 	 */
-	using signal_func_type = std::function<std::optional<dsp::Signal<sample_type>>(dsp::frequency_t, dsp::sample_rate_t, size_t)>;
+	using signal_func_type = std::function<std::optional<dsp::Signal<sample_type>>(dsp::frequency_hz_t, dsp::sample_rate_t, size_t)>;
 
 	// TODO switch this to a result to indicate more granular errors
 	static std::optional<Instrument> create(const signal_func_type& signal_func, const dsp::sample_rate_t sample_rate, size_t num_samples_in_signals) {

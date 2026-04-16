@@ -37,6 +37,9 @@ bool process_stop_message(AudioThreadData& atd);
 bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::frame_real_t>* signal_ptr);
 std::optional<dsp::Signal<dsp::frame_real_t>> read_snd_file(const std::string& file_path);
 std::optional<dsp::Signal<dsp::frame_real_t>> generate_sin_wave(dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
+bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* signal_ptr);
+std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path);
+std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
 void display_options();
 stac::lfmq::MessageType process_user_input();
 stac::lfmq::SpscQueue<stac::lfmq::Message<>, 10> g_message_queue;
@@ -52,6 +55,20 @@ int main() {
 		return 1;
 	}
 
+	auto gen_sin_wave = [](dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate) {
+		return stac::generate_sin_signal<dsp::sample_t>(frequency, sample_rate);
+	};
+	// std::optional<stac::Instrument<dsp::sample_t>> instrument = stac::Instrument<dsp::sample_t>::create(gen_sin_wave, dsp::SAMPLE_RATE, 1000);
+	stac::Tone tone;
+	tone.set_note(stac::Note::A);
+	tone.set_octave(stac::Octave::FOUR);
+	dsp::Signal<dsp::sample_t> sin_signal = stac::generate_sin_signal<dsp::sample_t>(tone.frequency(), dsp::SAMPLE_RATE);
+	static constexpr char sin_signal_path[] = "C:/Users/Mynam/source/repos/audio_lib/plots/sin_signal.sig";
+	// static constexpr char sin_signal_path[] = "/home/grant/projects/git/audio_lib/plots/sin_signal.sig";
+	dsp::utils::WriteResult result = dsp::utils::write_signal_to_file(sin_signal, sin_signal_path);
+
+	std::cout << "signal write result: " << (int)result << "\n";
+
 	std::future<int32_t> audio_t = std::async(std::launch::async, audio_thread, signal.value());
 	stac::lfmq::MessageType msg_type = stac::lfmq::MessageType::UNKNOWN;
 
@@ -59,11 +76,6 @@ int main() {
 		display_options();
 		msg_type = process_user_input();
 	}
-
-	auto gen_sin_wave = [](dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, size_t num_samples) {
-		return stac::generate_sin_signal<dsp::sample_t>(frequency, sample_rate, num_samples);
-	};
-	std::optional<stac::Instrument<dsp::sample_t>> instrument = stac::Instrument<dsp::sample_t>::create(gen_sin_wave, dsp::SAMPLE_RATE, 1000);
 
 	audio_t.wait();
 
@@ -430,7 +442,9 @@ stac::lfmq::MessageType process_user_input() {
 			// It's fine to not check has_value here because I know that the operation will succeed
 			// but the result of a signal generation should be checked generally
 			static dsp::Signal<dsp::frame_real_t> signal = generate_sin_wave(tone.frequency(), dsp::DEFAULT_SAMPLE_RATE, signal_duration).value();
-			const dsp::utils::WriteResult write_result = dsp::utils::write_signal_to_file(signal, "/home/grant/projects/git/audio_lib/plots/signal.sig");
+			static constexpr  char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/plots/signal.sig";
+			// static constexpr FILE_PATH[] = "/home/grant/projects/git/audio_lib/plots/signal.sig";
+			const dsp::utils::WriteResult write_result = dsp::utils::write_signal_to_file(signal, FILE_PATH);
 
 			std::cout << "result of writing signal to file: " << static_cast<int32_t>(write_result) << "\n";
 

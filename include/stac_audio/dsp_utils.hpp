@@ -79,7 +79,11 @@ WriteResult write_signal_to_file(const Signal<_sample_t, _capacity>& signal, con
  * @param time Time in ms
  * @return Sample index corresponding to the time and sample rate
  */
-constexpr size_t sample_index_from_time(const sample_rate_t sample_rate, const time_ms_t time) {
+constexpr size_t sample_index_from_time(const sample_rate_t sample_rate, const dsp::time_t time) {
 	return static_cast<size_t>(time * (sample_rate / 1000.0));
 }
+
+/**
+ * @brief Calculate the number of samples in a cycle based on the frequency and sample rate
+ */
 } // namespace dsp::utils

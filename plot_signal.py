@@ -33,20 +33,20 @@ def read_signal_file(file_path: str, time_window: int) -> tuple[(list[float], li
 
     return (left_samples, right_samples, sample_rate)
 
-def plot_example_signal() -> None:
-    Fs: int = 44100
-    freq: int = 220
-    num_samples: int = 100
-    y_values: list[int] = []
+def plot_signal(signal: list[float], title: str, figure_number: int, domain: str):
+    plt.figure(figure_number)
+    plt.plot(signal)
+    plt.title(title)
 
-    for sample_num in range(0, num_samples):
-        y_values.append(numpy.sin(numpy.pi * freq * sample_num / Fs))
-        print(y_values[sample_num])
-
-    plt.plot(y_values)
-    plt.xlabel('Samples')
-    plt.ylabel('Amplitude')
-    plt.show()
+    if domain == 'time':
+        plt.ylabel('Amplitude')
+        plt.xlabel('Sample number')
+    elif domain == 'frequency':
+        plt.ylabel('Magnitude')
+        plt.xlabel('Frequency')
+    else:
+        print('Invalid domain type: ' + domain)
+        exit()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='plot_signal', description='Script to plot signal files')
@@ -63,8 +63,20 @@ if __name__ == "__main__":
     # plot_example_signal()
     (left_samples, right_samples, sample_rate) = read_signal_file(file_path, time_window)
 
-    plt.plot(left_samples)
-    plt.ylabel('Amplitude')
-    plt.xlabel('Sample number')
+    figure_number: int = 0
+
+    figure_number += 1
+    plot_signal(left_samples, 'Left Channel Time Domain', figure_number, 'time')
+    figure_number += 1
+    plot_signal(right_samples, 'Right Channel Time Domain', figure_number, 'time')
+
+    # TODO read the pysdr section about fft shifts then fix these plots. They are currently in complex form
+    left_samples_fft = numpy.fft.fft(left_samples)
+    right_samples_fft = numpy.fft.fft(right_samples)
+
+    figure_number += 1
+    plot_signal(left_samples_fft, 'Left Channel Frequency Domain', figure_number, 'frequency')
+    figure_number += 1
+    plot_signal(right_samples_fft, 'Right Channel Frequency Domain', figure_number, 'frequency')
 
     plt.show()

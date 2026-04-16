@@ -1,26 +1,22 @@
 #pragma once
 
-#include <optional>
+#include <iostream>
 #include <numbers>
 #include <cmath>
 
 #include "dsp_declarations.hpp"
 #include "signals.hpp"
+#include "dsp_utils.hpp"
 
 namespace stac {
-// it really doesn't make any sense to calculate more than one cycle for any of these so the
-// num_signals parameter is not actually necessary
-
-
 template<typename _sample_t>
-std::optional<dsp::Signal<_sample_t>> generate_sin_signal(const dsp::frequency_t frequency, const dsp::sample_rate_t sample_rate, size_t num_samples) {
+dsp::Signal<_sample_t> generate_sin_signal(const dsp::frequency_hz_t frequency, const dsp::sample_rate_t sample_rate) {
 	dsp::Signal<_sample_t> signal(sample_rate);
+	const dsp::time_t period = 1.0 / frequency * 1000.0;
+	const size_t num_samples = dsp::utils::sample_index_from_time(sample_rate, period);
+	std::cout << "period: " << period << ", num_samples: " << num_samples << "\n";
 
-	try {
-		signal.frames.reserve(num_samples);
-	} catch (const std::bad_alloc& e) {
-		return std::nullopt;
-	}
+	signal.frames.reserve(num_samples);
 
 	_sample_t curr_sample = 0.0;
 
@@ -39,25 +35,23 @@ std::optional<dsp::Signal<_sample_t>> generate_sin_signal(const dsp::frequency_t
 enum class SawtoothGenerationStrategy {
 	ADDITIVE = 0,
 	PHASE_ACCUMULATOR = 1,
-}
+};
 
 template<typename _sample_t>
-std::optional<dsp::Signal<_sample_t>> generate_sawtooth_signal(const dsp::frequency_t fundamental_frequency, const uint16_t num_harmonics, const dsp::sample_rate_t sample_rate, const size_t num_samples) {
+dsp::Signal<_sample_t> generate_sawtooth_signal(const dsp::frequency_hz_t fundamental_frequency, const uint16_t num_harmonics, const dsp::sample_rate_t sample_rate) {
 	dsp::Signal<_sample_t> signal(sample_rate);
 
-	try {
-		signal.frames.reserve(num_samples);
-	} catch (const std::bad_alloc& e) {
-		return std::nullopt;
-	}
+	// TODO reserve proper num frames and calculate proper num samples
+	signal.frames.reserve(1);
+	size_t num_samples = 1;
 
 	_sample_t curr_sample = 0.0;
 
 	for (size_t sample_index = 0; sample_index < num_samples; sample_index++) {
 		for (size_t harmonic_num = 1; harmonic_num <= num_harmonics; harmonic_num++) {
-			curr_sample = (1 / static_cast<float>(harmonic_num)) * static_cast<_sample_t>(std::)
+			// curr_sample = (1 / static_cast<float>(harmonic_num)) * static_cast<_sample_t>(std::)
 
-			signal.frames.emplace_back(curr_sample);
+			// signal.frames.emplace_back(curr_sample);
 		}
 	}
 
