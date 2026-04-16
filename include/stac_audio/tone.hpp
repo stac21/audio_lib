@@ -40,7 +40,11 @@ enum class Octave : uint8_t {
 	NUM_ENTRIES = EIGHT + 1
 };
 
+constexpr uint8_t NUM_SEMITONES = static_cast<uint8_t>(Note::NUM_ENTRIES) * static_cast<uint8_t>(Octave::NUM_ENTRIES);
+
 struct Tone {
+	Tone() = default;
+
 	/**
 	 * @brief  Create a new instance of a Tone, checking whether the note and octave are valid values before setting
 	 * @note   Tone remains unchanged if arguments are invalid values (>= NUM_ENTRIES)
@@ -116,7 +120,7 @@ private:
 	static_assert(sizeof(Tone::frequencies) / sizeof(Tone::frequencies[0]) == static_cast<uint8_t>(Note::NUM_ENTRIES), "Number of rows in frequency matrix must == Note::NUM_ENTRIES");
 	static_assert(sizeof(Tone::frequencies[0]) / sizeof(dsp::frequency_hz_t) == static_cast<uint8_t>(Octave::NUM_ENTRIES), "Number of columns in frequency matrix must == Octave::NUM_ENTRIES");
 
-	Note             m_note   = Note::C;
-	Octave           m_octave = Octave::ZERO;
+	Note   m_note   = Note::C;
+	Octave m_octave = Octave::ZERO;
 };
 }

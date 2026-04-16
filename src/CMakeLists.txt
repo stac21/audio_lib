@@ -28,6 +28,8 @@ set(
         ${INCLUDE_DIR}/lock_free_queue.hpp
         ${INCLUDE_DIR}/message.hpp
         ${INCLUDE_DIR}/frame.hpp
+        ${INCLUDE_DIR}/instrument.hpp
+        ${INCLUDE_DIR}/oscillators.hpp
 )
 
 add_library(${TARGET}

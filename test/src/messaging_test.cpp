@@ -5,6 +5,8 @@
 #include <stac_audio/audio_thread_data.hpp>
 #include <stac_audio/dsp_utils.hpp>
 #include <stac_audio/tone.hpp>
+#include <stac_audio/instrument.hpp>
+#include <stac_audio/oscillators.hpp>
 
 #include <portaudio.h>
 #include <sndfile.h>
@@ -57,6 +59,11 @@ int main() {
 		display_options();
 		msg_type = process_user_input();
 	}
+
+	auto gen_sin_wave = [](dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, size_t num_samples) {
+		return stac::generate_sin_signal<dsp::sample_t>(frequency, sample_rate, num_samples);
+	};
+	std::optional<stac::Instrument<dsp::sample_t>> instrument = stac::Instrument<dsp::sample_t>::create(gen_sin_wave, dsp::SAMPLE_RATE, 1000);
 
 	audio_t.wait();
 

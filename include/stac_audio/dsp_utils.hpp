@@ -72,6 +72,7 @@ WriteResult write_signal_to_file(const Signal<_sample_t, _capacity>& signal, con
 
 	return WriteResult::SUCCESS;
 }
+
 /**
  * @brief Get a signal sample index from a time in ms
  * @param sample_rate Sample rate of the signal
