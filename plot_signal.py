@@ -18,8 +18,12 @@ def read_signal_file(file_path: str, time_window: int) -> tuple[(list[float], li
         print('number of samples to plot ', num_samples_to_plot)
         print('sample rate ', sample_rate)
 
-        while line != '' and num_samples_read != num_samples_to_plot:
+        while num_samples_read != num_samples_to_plot:
             line = file.readline()
+
+            if line == '':
+                break
+
             split_line: list[str] = line.split(',')
 
             left_samples.append(float(split_line[0]))
