@@ -33,16 +33,24 @@ def read_signal_file(file_path: str, time_window: int) -> tuple[(list[float], li
 
     return (left_samples, right_samples, sample_rate)
 
-def plot_signal(signal: list[float], title: str, figure_number: int, domain: str):
+def plot_signal(signal: list[float], title: str, figure_number: int, domain: str, sample_rate: int):
     plt.figure(figure_number)
-    plt.plot(signal)
     plt.title(title)
 
     if domain == 'time':
+        plt.plot(signal)
         plt.ylabel('Amplitude')
         plt.xlabel('Sample number')
     elif domain == 'frequency':
-        plt.ylabel('Magnitude')
+        # Magnitude of frequencies
+        magnitude = numpy.abs(signal)
+        magnitude_x_axis = numpy.arange(-sample_rate / 2, sample_rate / 2, sample_rate / len(magnitude))
+        plt.plot(magnitude_x_axis, magnitude, 'b', label = 'Magnitude')
+
+        phase = numpy.angle(signal)
+        phase_x_axis = numpy.arange(-sample_rate / 2, sample_rate / 2, sample_rate / len(phase))
+        plt.plot(phase_x_axis, phase, 'r', label = 'Phase')
+        plt.legend()
         plt.xlabel('Frequency')
     else:
         print('Invalid domain type: ' + domain)
@@ -66,17 +74,16 @@ if __name__ == "__main__":
     figure_number: int = 0
 
     figure_number += 1
-    plot_signal(left_samples, 'Left Channel Time Domain', figure_number, 'time')
+    plot_signal(left_samples, 'Left Channel Time Domain', figure_number, 'time', sample_rate)
     figure_number += 1
-    plot_signal(right_samples, 'Right Channel Time Domain', figure_number, 'time')
+    plot_signal(right_samples, 'Right Channel Time Domain', figure_number, 'time', sample_rate)
 
-    # TODO read the pysdr section about fft shifts then fix these plots. They are currently in complex form
-    left_samples_fft = numpy.fft.fft(left_samples)
-    right_samples_fft = numpy.fft.fft(right_samples)
+    left_samples_fft = numpy.fft.fftshift(numpy.fft.fft(left_samples))
+    right_samples_fft = numpy.fft.fftshift(numpy.fft.fft(right_samples))
 
     figure_number += 1
-    plot_signal(left_samples_fft, 'Left Channel Frequency Domain', figure_number, 'frequency')
+    plot_signal(left_samples_fft, 'Left Channel Frequency Domain', figure_number, 'frequency', sample_rate)
     figure_number += 1
-    plot_signal(right_samples_fft, 'Right Channel Frequency Domain', figure_number, 'frequency')
+    plot_signal(right_samples_fft, 'Right Channel Frequency Domain', figure_number, 'frequency', sample_rate)
 
     plt.show()
