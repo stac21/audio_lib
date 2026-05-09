@@ -79,7 +79,7 @@ struct Tone {
 	 * @brief  Return the frequency corresponding to the note and octave of the tone
 	 * @return The frequency corresponding to the note and octave of the tone
 	 */
-	constexpr dsp::frequency_t frequency() const {
+	constexpr dsp::frequency_hz_t frequency() const {
 		/*
 		 * m_note and m_octave are guaranteed to be within the range of frequencies so no need to do
 		 * bounds checking in this function, it is done in the setters of this class
@@ -97,7 +97,7 @@ private:
 	 * Note: keeping this a C-style array to ensure contiguous memory
 	 * while still maintaining the simple [i][j] notation
 	 */
-	static constexpr dsp::frequency_t frequencies[static_cast<uint8_t>(Note::NUM_ENTRIES)][static_cast<uint8_t>(Octave::NUM_ENTRIES)] = {
+	static constexpr dsp::frequency_hz_t frequencies[static_cast<uint8_t>(Note::NUM_ENTRIES)][static_cast<uint8_t>(Octave::NUM_ENTRIES)] = {
 		// Octave  0      1      2       3       4       5       6        7        8             Note
 		         { 16.35, 32.70, 65.41,  130.81, 261.63, 523.25, 1046.50, 2093.00, 4186.01 }, // C
 		         { 17.32, 34.65, 69.30,  138.59, 277.18, 554.37, 1108.73, 2217.46, 4434.92 }, // C#/Db
@@ -114,7 +114,7 @@ private:
 	};
 
 	static_assert(sizeof(Tone::frequencies) / sizeof(Tone::frequencies[0]) == static_cast<uint8_t>(Note::NUM_ENTRIES), "Number of rows in frequency matrix must == Note::NUM_ENTRIES");
-	static_assert(sizeof(Tone::frequencies[0]) / sizeof(dsp::frequency_t) == static_cast<uint8_t>(Octave::NUM_ENTRIES), "Number of columns in frequency matrix must == Octave::NUM_ENTRIES");
+	static_assert(sizeof(Tone::frequencies[0]) / sizeof(dsp::frequency_hz_t) == static_cast<uint8_t>(Octave::NUM_ENTRIES), "Number of columns in frequency matrix must == Octave::NUM_ENTRIES");
 
 	Note             m_note   = Note::C;
 	Octave           m_octave = Octave::ZERO;

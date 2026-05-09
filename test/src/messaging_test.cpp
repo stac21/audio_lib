@@ -34,7 +34,7 @@ bool process_volume_message(AudioThreadData& atd);
 bool process_stop_message(AudioThreadData& atd);
 bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* signal_ptr);
 std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path);
-std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
+std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
 void display_options();
 stac::lfmq::MessageType process_user_input();
 stac::lfmq::SpscQueue<stac::lfmq::Message<>, 10> g_message_queue;
@@ -329,7 +329,7 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 	return signal;
 }
 
-std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, const dsp::time_ms_t duration) {
+std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, const dsp::time_ms_t duration) {
 	// important to note that the phase of the end resulting signal
 	// does not matter, but the relative phase of the harmonic signals
 	// does matter as they can constructively or destructively combine
@@ -422,7 +422,7 @@ stac::lfmq::MessageType process_user_input() {
 			//
 			// It's fine to not check has_value here because I know that the operation will succeed
 			// but the result of a signal generation should be checked generally
-			static dsp::Signal<dsp::sample_t> signal = generate_sin_wave(tone.frequency(), dsp::SAMPLE_RATE, signal_duration).value();
+			static dsp::Signal<dsp::sample_t> signal = generate_sin_wave(tone.frequency(), dsp::DEFAULT_SAMPLE_RATE, signal_duration).value();
 			const dsp::utils::WriteResult write_result = dsp::utils::write_signal_to_file(signal, "/home/grant/projects/git/audio_lib/plots/signal.sig");
 
 			std::cout << "result of writing signal to file: " << static_cast<int32_t>(write_result) << "\n";
