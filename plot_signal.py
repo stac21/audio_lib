@@ -33,15 +33,15 @@ def read_signal_file(file_path: str, time_window: int) -> tuple[(list[float], li
 
     return (left_samples, right_samples, sample_rate)
 
-def plot_signal(signal: list[float], title: str, figure_number: int, domain: str, sample_rate: int):
+def plot_signal(signal: list[float], title: str, figure_number: int, type: str, sample_rate: int):
     plt.figure(figure_number)
     plt.title(title)
 
-    if domain == 'time':
+    if type == 'time':
         plt.plot(signal)
         plt.ylabel('Amplitude')
         plt.xlabel('Sample number')
-    elif domain == 'frequency':
+    elif type == 'frequency':
         # Magnitude of frequencies
         magnitude = numpy.abs(signal)
         magnitude_x_axis = numpy.arange(-sample_rate / 2, sample_rate / 2, sample_rate / len(magnitude))
@@ -52,18 +52,27 @@ def plot_signal(signal: list[float], title: str, figure_number: int, domain: str
         plt.plot(phase_x_axis, phase, 'r', label = 'Phase')
         plt.legend()
         plt.xlabel('Frequency')
+    elif type == 'one_third_octave':
+        # TODO plot the OTO graph
+        print('Plotting OTO')
     else:
-        print('Invalid domain type: ' + domain)
+        print('Invalid domain type: ' + type)
         exit()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='plot_signal', description='Script to plot signal files')
     parser.add_argument('--file_path', required=True)
     parser.add_argument('--time_window', required=True)
+    parser.add_argument('-td', '--time_domain', action='store_true')
+    parser.add_argument('-fd', '--freq_domain', action='store_true')
+    parser.add_argument('-oto', '--one_third_octave', action='store_true')
     args = parser.parse_args()
 
     file_path: str = str(args.file_path)
     time_window: int = int(args.time_window)
+    plot_time_domain = args.time_domain
+    plot_freq_domain = args.freq_domain
+    plot_one_third_octave = args.one_third_octave
 
     print('Reading from ', file_path)
     print('Time Window, in ms', time_window)
@@ -73,17 +82,25 @@ if __name__ == "__main__":
 
     figure_number: int = 0
 
-    figure_number += 1
-    plot_signal(left_samples, 'Left Channel Time Domain', figure_number, 'time', sample_rate)
-    figure_number += 1
-    plot_signal(right_samples, 'Right Channel Time Domain', figure_number, 'time', sample_rate)
+    if plot_time_domain:
+      figure_number += 1
+      plot_signal(left_samples, 'Left Channel Time Domain', figure_number, 'time', sample_rate)
+      figure_number += 1
+      plot_signal(right_samples, 'Right Channel Time Domain', figure_number, 'time', sample_rate)
 
-    left_samples_fft = numpy.fft.fftshift(numpy.fft.fft(left_samples))
-    right_samples_fft = numpy.fft.fftshift(numpy.fft.fft(right_samples))
+    if plot_freq_domain or plot_one_third_octave:
+      left_samples_fft = numpy.fft.fftshift(numpy.fft.fft(left_samples))
+      right_samples_fft = numpy.fft.fftshift(numpy.fft.fft(right_samples))
 
-    figure_number += 1
-    plot_signal(left_samples_fft, 'Left Channel Frequency Domain', figure_number, 'frequency', sample_rate)
-    figure_number += 1
-    plot_signal(right_samples_fft, 'Right Channel Frequency Domain', figure_number, 'frequency', sample_rate)
+      if plot_freq_domain:
+         figure_number += 1
+         plot_signal(left_samples_fft, 'Left Channel Frequency Domain', figure_number, 'frequency', sample_rate)
+         figure_number += 1
+         plot_signal(right_samples_fft, 'Right Channel Frequency Domain', figure_number, 'frequency', sample_rate)
+      if plot_one_third_octave:
+         figure_number += 1
+         plot_signal(left_samples_fft, 'Left Channel One Third Octave', figure_number, 'one_third_octave', sample_rate)
+         figure_number += 1
+         plot_signal(right_samples_fft, 'Right Channel One Third Octave', figure_number, 'one_third_octave', sample_rate)
 
     plt.show()
