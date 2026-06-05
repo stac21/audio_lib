@@ -32,7 +32,6 @@ set(
 add_library(${TARGET}
     menu.cpp
     tone.cpp
-    message.cpp
     ${HEADER_FILES}
 )
 add_library(${TARGET}::${TARGET} ALIAS ${TARGET})
