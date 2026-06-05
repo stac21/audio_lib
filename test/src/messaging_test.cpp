@@ -13,8 +13,8 @@
 #include <limits>
 #include <optional>
 #include <numbers>
-#include <lfmq/message.hpp>
-#include <lfmq/lock_free_queue.hpp>
+#include <stac_audio/message.hpp>
+#include <stac_audio/lock_free_queue.hpp>
 
 #define CHECK_PA_ERROR(err)\
 	if (err != paNoError) {\

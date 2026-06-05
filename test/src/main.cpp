@@ -6,8 +6,8 @@
 #include <sndfile.h>
 #include <portaudio.h>
 #include <fstream>
-#include <lfmq/message.hpp>
-#include <lfmq/lock_free_queue.hpp>
+#include <stac_audio/message.hpp>
+#include <stac_audio/lock_free_queue.hpp>
 
 #include <stac_audio/dsp_declarations.hpp>
 #include <stac_audio/signals.hpp>
@@ -239,7 +239,7 @@ int main() {
 
 		return 1;
 	}
-	
+
 	return 0;*/
 }
 
@@ -298,7 +298,7 @@ int main() {
 //
 //	err = Pa_OpenStream(&stream, nullptr, &output_params, sf_info.samplerate, 256, paClipOff,
 //		callback_func, sf);
-// 
+//
 //	CHECK_PA_ERROR(err);
 //
 //	err = Pa_StartStream(stream);
