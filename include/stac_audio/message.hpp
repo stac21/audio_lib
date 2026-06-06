@@ -4,7 +4,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace lfmq
+namespace stac::lfmq
 {
 enum class MessageType {
 	UNKNOWN,         // Unknown message type
@@ -84,4 +84,4 @@ private:
 	/// Size of the payload in bytes
 	size_t payload_size;
 };
-} // namespace lfmq
+}

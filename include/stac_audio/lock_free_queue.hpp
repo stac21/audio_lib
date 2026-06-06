@@ -3,7 +3,7 @@
 #include <atomic>
 #include <tuple>
 
-namespace lfmq
+namespace stac::lfmq
 {
 /*
  * the lock free queue implementation is a circular buffer where the value is
@@ -115,9 +115,9 @@ private:
 	std::atomic<size_t> read_index  = 0;
 	std::atomic<size_t> write_index = 0;
 };
-} // namespace lfmq
+}
 
 /// Tuple size specialization for SpscQueue
 template<typename _T, size_t _size>
-struct std::tuple_size<lfmq::SpscQueue<_T, _size>> : public std::integral_constant<std::size_t, _size>
+struct std::tuple_size<stac::lfmq::SpscQueue<_T, _size>> : public std::integral_constant<std::size_t, _size>
 {};
