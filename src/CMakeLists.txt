@@ -6,7 +6,6 @@ find_library(fftw3_LIBRARY_PATH fftw3)
 
 find_package(SndFile REQUIRED)
 find_package(PortAudio REQUIRED)
-find_package(lfmq REQUIRED)
 
 set(TARGET stac_audio)
 
@@ -26,6 +25,8 @@ set(
         ${INCLUDE_DIR}/signals.hpp
         ${INCLUDE_DIR}/menu.hpp
         ${INCLUDE_DIR}/tone.hpp
+        ${INCLUDE_DIR}/lock_free_queue.hpp
+        ${INCLUDE_DIR}/message.hpp
 )
 
 add_library(${TARGET}
@@ -44,7 +45,6 @@ set_target_properties(${TARGET}
 target_link_libraries(${TARGET} PUBLIC PortAudio::portaudio)
 target_link_libraries(${TARGET} PUBLIC SndFile::sndfile)
 target_link_libraries(${TARGET} PUBLIC ${fftw3_LIBRARY_PATH})
-target_link_libraries(${TARGET} PUBLIC lfmq::lfmq)
 
 target_include_directories(${TARGET}
     PUBLIC

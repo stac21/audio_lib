@@ -13,8 +13,8 @@
 #include <limits>
 #include <optional>
 #include <numbers>
-#include <lfmq/message.hpp>
-#include <lfmq/lock_free_queue.hpp>
+#include <stac_audio/message.hpp>
+#include <stac_audio/lock_free_queue.hpp>
 
 #define CHECK_PA_ERROR(err)\
 	if (err != paNoError) {\
@@ -27,7 +27,7 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 	PaStreamCallbackFlags status_flags, void* user_data);
 // returns the number of messages processed
 size_t process_messages(AudioThreadData& atd, const size_t num_messages);
-bool process_message(AudioThreadData& atd, const lfmq::Message& msg);
+bool process_message(AudioThreadData& atd, const stac::lfmq::Message<>& msg);
 bool process_play_message(AudioThreadData& atd, const dsp::time_ms_t time);
 bool process_pause_message(AudioThreadData& atd);
 bool process_volume_message(AudioThreadData& atd);
@@ -36,8 +36,8 @@ bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>
 std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path);
 std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
 void display_options();
-lfmq::MessageType process_user_input();
-lfmq::SpscQueue<lfmq::Message, 10> g_message_queue;
+stac::lfmq::MessageType process_user_input();
+stac::lfmq::SpscQueue<stac::lfmq::Message<>, 10> g_message_queue;
 
 int main() {
 	static constexpr char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/test/file.wav";
@@ -51,9 +51,9 @@ int main() {
 	}
 
 	std::future<int32_t> audio_t = std::async(std::launch::async, audio_thread, signal.value());
-	lfmq::MessageType msg_type = lfmq::MessageType::UNKNOWN;
+	stac::lfmq::MessageType msg_type = stac::lfmq::MessageType::UNKNOWN;
 
-	while (msg_type != lfmq::MessageType::STOP) {
+	while (msg_type != stac::lfmq::MessageType::STOP) {
 		display_options();
 		msg_type = process_user_input();
 	}
@@ -201,7 +201,7 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 }
 
 size_t process_messages(AudioThreadData& atd, const size_t num_messages) {
-	lfmq::Message msg;
+	stac::lfmq::Message msg;
 	size_t num_messages_processed = 0;
 
 	for (size_t i = 0; i < num_messages && g_message_queue.pop(&msg); i++) {
@@ -213,26 +213,26 @@ size_t process_messages(AudioThreadData& atd, const size_t num_messages) {
 	return num_messages_processed;
 }
 
-bool process_message(AudioThreadData& atd, const lfmq::Message& msg) {
+bool process_message(AudioThreadData& atd, const stac::lfmq::Message<>& msg) {
 	bool successfully_processed;
 
-	switch (msg.get_metadata().get_type()) {
-	case lfmq::MessageType::PLAY_AT:
+	switch (msg.metadata.type) {
+	case stac::lfmq::MessageType::PLAY_AT:
 	{
 		const dsp::time_ms_t play_time = msg.get_payload<dsp::time_ms_t>();
 		successfully_processed = process_play_message(atd, play_time);
 		break;
 	}
-	case lfmq::MessageType::PAUSE:
+	case stac::lfmq::MessageType::PAUSE:
 		successfully_processed = process_pause_message(atd);
 		break;
-	case lfmq::MessageType::VOLUME:
+	case stac::lfmq::MessageType::VOLUME:
 		successfully_processed = process_volume_message(atd);
 		break;
-	case lfmq::MessageType::STOP:
+	case stac::lfmq::MessageType::STOP:
 		successfully_processed = process_stop_message(atd);
 		break;
-	case lfmq::MessageType::EFFECT_ADDED:
+	case stac::lfmq::MessageType::EFFECT_ADDED:
 	{
 		const dsp::Signal<dsp::sample_t>* const signal_ptr = msg.get_payload<const dsp::Signal<dsp::sample_t>* const>();
 		successfully_processed = process_effect_added(atd, signal_ptr);
@@ -378,7 +378,7 @@ void display_options() {
 		<< "Selected option: ";
 }
 
-lfmq::MessageType process_user_input() {
+stac::lfmq::MessageType process_user_input() {
 	std::string user_input;
 	std::cin >> user_input;
 
@@ -388,34 +388,32 @@ lfmq::MessageType process_user_input() {
 
 	// error while parsing the input
 	if (result.ec != std::errc()) {
-		return lfmq::MessageType::UNKNOWN;
+		return stac::lfmq::MessageType::UNKNOWN;
 	}
 
-	lfmq::Message msg;
-	lfmq::MessageMetadata msg_metadata(lfmq::MessageType::UNKNOWN);
+	stac::lfmq::Message msg;
+	stac::lfmq::MessageMetadata msg_metadata(stac::lfmq::MessageType::UNKNOWN);
 
 	switch (static_cast<UserChoices>(option)) {
 	case UserChoices::PLAY_AUDIO_FROM_BEGINNING:
-		msg_metadata.set_type(lfmq::MessageType::PLAY_AT);
+		msg_metadata.type = stac::lfmq::MessageType::PLAY_AT;
 		// the cast to uint64_t is necessary so the Message is able to correctly deduce the type
 		msg.set_payload(static_cast<dsp::time_ms_t>(0));
 		break;
 	case UserChoices::PAUSE_OR_RESUME_AUDIO:
-		msg_metadata.set_type(lfmq::MessageType::PAUSE);
+		msg_metadata.type = stac::lfmq::MessageType::PAUSE;
 		break;
 	case UserChoices::TOGGLE_MUTE:
-		msg_metadata.set_type(lfmq::MessageType::VOLUME);
+		msg_metadata.type = stac::lfmq::MessageType::VOLUME;
 		break;
 	case UserChoices::STOP_PLAYBACK:
-		msg_metadata.set_type(lfmq::MessageType::STOP);
+		msg_metadata.type = stac::lfmq::MessageType::STOP;
 		break;
 	case UserChoices::PLAY_NOTE:
-		// TODO remove the message types from lfmq and place them in
-		// the controller layer
 		if (std::optional<stac::Tone> toneOpt = stac::Tone::create(stac::Note::A, stac::Octave::TWO); toneOpt.has_value()) {
 			const stac::Tone& tone = toneOpt.value();
 
-			msg_metadata.set_type(lfmq::MessageType::EFFECT_ADDED);
+			msg_metadata.type = stac::lfmq::MessageType::EFFECT_ADDED;
 
 			static constexpr dsp::time_ms_t signal_duration = 3000;
 
@@ -435,19 +433,19 @@ lfmq::MessageType process_user_input() {
 		} else {
 			std::cout << "Unable to create tone\n";
 
-			msg_metadata.set_type(lfmq::MessageType::UNKNOWN);
+			msg_metadata.type = stac::lfmq::MessageType::UNKNOWN;
 		}
 		break;
 	default:
-		msg_metadata.set_type(lfmq::MessageType::UNKNOWN);
+		msg_metadata.type = stac::lfmq::MessageType::UNKNOWN;
 		break;
 	}
 
-	if (msg_metadata.get_type() != lfmq::MessageType::UNKNOWN) {
-		msg.set_metadata(msg_metadata);
+	if (msg_metadata.type != stac::lfmq::MessageType::UNKNOWN) {
+		msg.metadata = msg_metadata;
 
 		g_message_queue.push(msg);
 	}
 
-	return msg_metadata.get_type();
+	return msg_metadata.type;
 }
