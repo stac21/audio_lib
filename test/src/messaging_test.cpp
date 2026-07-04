@@ -21,7 +21,7 @@
 		std::cout << "PaError #: " << err << ", Message: " << Pa_GetErrorText(err) << "\n";\
 	}\
 
-int32_t audio_thread(dsp::Signal<dsp::sample_t> signal);
+int32_t audio_thread(dsp::Signal<dsp::frame_real_t> signal);
 int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 	unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo* time_info,
 	PaStreamCallbackFlags status_flags, void* user_data);
@@ -32,9 +32,9 @@ bool process_play_message(AudioThreadData& atd, const dsp::time_ms_t time);
 bool process_pause_message(AudioThreadData& atd);
 bool process_volume_message(AudioThreadData& atd);
 bool process_stop_message(AudioThreadData& atd);
-bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* signal_ptr);
-std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path);
-std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
+bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::frame_real_t>* signal_ptr);
+std::optional<dsp::Signal<dsp::frame_real_t>> read_snd_file(const std::string& file_path);
+std::optional<dsp::Signal<dsp::frame_real_t>> generate_sin_wave(dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
 void display_options();
 stac::lfmq::MessageType process_user_input();
 stac::lfmq::SpscQueue<stac::lfmq::Message<>, 10> g_message_queue;
@@ -42,7 +42,7 @@ stac::lfmq::SpscQueue<stac::lfmq::Message<>, 10> g_message_queue;
 int main() {
 	static constexpr char FILE_PATH[] = "C:/Users/MyNam/source/repos/audio_lib/test/file.wav";
 	//static constexpr char FILE_PATH[] = "/home/grant/projects/git/audio_lib/test/file.wav";
-	std::optional<dsp::Signal<dsp::sample_t>> signal;
+	std::optional<dsp::Signal<dsp::frame_real_t>> signal;
 	signal = read_snd_file(&FILE_PATH[0]);
 
 	if (!signal.has_value()) {
@@ -63,7 +63,7 @@ int main() {
 	return 0;
 }
 
-int32_t audio_thread(dsp::Signal<dsp::sample_t> signal) {
+int32_t audio_thread(dsp::Signal<dsp::frame_real_t> signal) {
 	std::cout << "Starting audio thread\n";
 	PaStreamParameters stream_params;
 	PaError err;
@@ -139,10 +139,10 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 	}
 
 	AudioThreadData& atd = *static_cast<AudioThreadData*>(user_data);
-	dsp::sample_t* const out_buf = static_cast<dsp::sample_t*>(output_buffer);
+	dsp::sample_real_t* const out_buf = static_cast<dsp::sample_real_t*>(output_buffer);
 	const size_t out_buf_len = frames_per_buffer * dsp::NUM_CHANNELS;
 	// size in bytes of out_buf
-	const size_t out_buf_size = sizeof(dsp::sample_t) * out_buf_len;
+	const size_t out_buf_size = sizeof(dsp::sample_real_t) * out_buf_len;
 
 	process_messages(atd, 1);
 
@@ -153,18 +153,18 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 	switch (atd.state) {
 	case AudioThreadState::PLAYING:
 		// populate the wave
-		for (size_t i = 0; i < atd.wave.size(); i++) {
+		for (size_t i = 0; i < atd.wave.samples.size(); i++) {
 			// loop the audio
-			if (atd.sample_index >= atd.signal->frames.size()) {
+			if (atd.sample_index >= atd.signal->samples.size()) {
 				atd.sample_index = 0;
 			}
 
-			atd.wave.at(i) = atd.signal->frames.at(atd.sample_index);
+			atd.wave.samples.at(i) = atd.signal->samples.at(atd.sample_index);
 			atd.sample_index++;
 		}
 
 		// apply effects to the wave
-		for (dsp::Frame<dsp::sample_t>& curr_frame : atd.wave) {
+		for (dsp::frame_real_t& curr_frame : atd.wave.samples) {
 			// is the amplitude scalar applied before or after effects? It probably doesn't matter...
 			// at least not for filters
 			curr_frame.left_sample  *= atd.amplitude_scalar;
@@ -172,8 +172,8 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 		}
 
 		// copy wave into output buffer
-		for (size_t i = 0; i < atd.wave.size(); i++) {
-			const dsp::Frame<dsp::sample_t>& curr_frame = atd.wave.at(i);
+		for (size_t i = 0; i < atd.wave.samples.size(); i++) {
+			const dsp::frame_real_t& curr_frame = atd.wave.samples.at(i);
 
 			if (i * dsp::NUM_CHANNELS + 1 < out_buf_len) {
 				out_buf[i * dsp::NUM_CHANNELS]     = curr_frame.left_sample;
@@ -234,7 +234,7 @@ bool process_message(AudioThreadData& atd, const stac::lfmq::Message<>& msg) {
 		break;
 	case stac::lfmq::MessageType::EFFECT_ADDED:
 	{
-		const dsp::Signal<dsp::sample_t>* const signal_ptr = msg.get_payload<const dsp::Signal<dsp::sample_t>* const>();
+		const dsp::Signal<dsp::frame_real_t>* const signal_ptr = msg.get_payload<const dsp::Signal<dsp::frame_real_t>* const>();
 		successfully_processed = process_effect_added(atd, signal_ptr);
 		break;
 	}
@@ -249,7 +249,7 @@ bool process_message(AudioThreadData& atd, const stac::lfmq::Message<>& msg) {
 bool process_play_message(AudioThreadData& atd, const dsp::time_ms_t time) {
 	const size_t sample_index = dsp::utils::sample_index_from_time(atd.signal->sample_rate, time);
 
-	if (sample_index >= atd.signal->frames.size()) {
+	if (sample_index >= atd.signal->samples.size()) {
 		return false;
 	}
 
@@ -271,8 +271,8 @@ bool process_pause_message(AudioThreadData& atd) {
 
 bool process_volume_message(AudioThreadData& atd) {
 	// toggle the mute status of the audio stream
-	atd.amplitude_scalar = (static_cast<dsp::sample_t>(std::abs(atd.amplitude_scalar - 1.0))
-	                        <= std::numeric_limits<dsp::sample_t>::epsilon()) ? 0.0 : 1.0;
+	atd.amplitude_scalar = (static_cast<dsp::sample_real_t>(std::abs(atd.amplitude_scalar - 1.0))
+	                        <= std::numeric_limits<dsp::sample_real_t>::epsilon()) ? 0.0 : 1.0;
 
 	return true;
 }
@@ -283,7 +283,7 @@ bool process_stop_message(AudioThreadData& atd) {
 	return true;
 }
 
-bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* const signal_ptr) {
+bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::frame_real_t>* const signal_ptr) {
 	atd.state        = AudioThreadState::PLAYING;
 	atd.sample_index = 0;
 	atd.signal       = signal_ptr;
@@ -291,7 +291,7 @@ bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>
 	return true;
 }
 
-std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path) {
+std::optional<dsp::Signal<dsp::frame_real_t>> read_snd_file(const std::string& file_path) {
 	SF_INFO sf_info;
 	SNDFILE* sf = sf_open(file_path.c_str(), SFM_READ, &sf_info);
 
@@ -301,14 +301,14 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 
 	std::cout << "sf_info.channels: " << sf_info.channels << "\n";
 
-	dsp::Signal<dsp::sample_t> signal;
+	dsp::Signal<dsp::frame_real_t> signal;
 
 	signal.sample_rate = sf_info.samplerate;
 
 	sf_count_t curr_frames_read = 0;
 	constexpr sf_count_t NUM_FRAMES_TO_READ = 256;
-	std::array<dsp::sample_t, NUM_FRAMES_TO_READ> in_buffer = {};
-	dsp::Frame<dsp::sample_t> curr_frame;
+	std::array<dsp::sample_real_t, NUM_FRAMES_TO_READ> in_buffer = {};
+	dsp::frame_real_t curr_frame;
 
 	do {
 		curr_frames_read = sf_readf_float(sf, in_buffer.data(), in_buffer.size());
@@ -322,14 +322,14 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 				curr_frame.right_sample = in_buffer.at(i + 1);
 			}
 
-			signal.frames.push_back(curr_frame);
+			signal.samples.push_back(curr_frame);
 		}
 	} while (curr_frames_read == NUM_FRAMES_TO_READ);
 
 	return signal;
 }
 
-std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency_t frequency, dsp::sample_rate_t sample_rate, const dsp::time_ms_t duration) {
+std::optional<dsp::Signal<dsp::frame_real_t>> generate_sin_wave(const dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, const dsp::time_ms_t duration) {
 	// important to note that the phase of the end resulting signal
 	// does not matter, but the relative phase of the harmonic signals
 	// does matter as they can constructively or destructively combine
@@ -341,20 +341,20 @@ std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency
 	std::cout << "num_samples_in_signal: " << num_samples_in_signal << "\n";
 	std::cout << "frequency: " << frequency << "\n";
 
-	dsp::Signal<dsp::sample_t> signal(sample_rate);
+	dsp::Signal<dsp::frame_real_t> signal(sample_rate);
 	try {
-		signal.frames.reserve(num_samples_in_signal);
+		signal.samples.reserve(num_samples_in_signal);
 	} catch (std::bad_alloc& e) {
 		// the requested buffer size was too large to allocate
 		return std::nullopt;
 	}
 
-	dsp::sample_t curr_sample = 0.0;
+	dsp::sample_real_t curr_sample = 0.0;
 
 	for (size_t sample_index = 0; sample_index < num_samples_in_signal; sample_index++) {
-		curr_sample = static_cast<dsp::sample_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
+		curr_sample = static_cast<dsp::sample_real_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
 
-		signal.frames.emplace_back(curr_sample, curr_sample);
+		signal.samples.emplace_back(curr_sample, curr_sample);
 	}
 
 	return signal;
@@ -422,7 +422,7 @@ stac::lfmq::MessageType process_user_input() {
 			//
 			// It's fine to not check has_value here because I know that the operation will succeed
 			// but the result of a signal generation should be checked generally
-			static dsp::Signal<dsp::sample_t> signal = generate_sin_wave(tone.frequency(), dsp::SAMPLE_RATE, signal_duration).value();
+			static dsp::Signal<dsp::frame_real_t> signal = generate_sin_wave(tone.frequency(), dsp::DEFAULT_SAMPLE_RATE, signal_duration).value();
 			const dsp::utils::WriteResult write_result = dsp::utils::write_signal_to_file(signal, "/home/grant/projects/git/audio_lib/plots/signal.sig");
 
 			std::cout << "result of writing signal to file: " << static_cast<int32_t>(write_result) << "\n";

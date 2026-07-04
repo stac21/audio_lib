@@ -27,6 +27,7 @@ set(
         ${INCLUDE_DIR}/tone.hpp
         ${INCLUDE_DIR}/lock_free_queue.hpp
         ${INCLUDE_DIR}/message.hpp
+        ${INCLUDE_DIR}/frame.hpp
 )
 
 add_library(${TARGET}

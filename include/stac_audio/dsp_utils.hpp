@@ -44,8 +44,8 @@ enum class WriteResult : uint8_t {
 * @param signal the signal to write to a file
 * @param file_path the path of the file to write the signal to
 */
-template<typename _sample_t>
-WriteResult write_signal_to_file(const Signal<_sample_t>& signal, const std::string& file_path) {
+template<typename _sample_t, size_t _capacity>
+WriteResult write_signal_to_file(const Signal<_sample_t, _capacity>& signal, const std::string& file_path) {
 	std::fstream file(file_path, std::ios_base::out | std::ios_base::trunc);
 
 	if (!file.is_open()) {
@@ -54,10 +54,10 @@ WriteResult write_signal_to_file(const Signal<_sample_t>& signal, const std::str
 
 	file << signal.sample_rate << "\n";
 
-	for (size_t i = 0; i < signal.frames.size(); i++) {
+	for (size_t i = 0; i < signal.samples.size(); i++) {
 		static constexpr size_t num_frames_to_write_before_flushing = 50;
 
-		const dsp::Frame<_sample_t>& frame = signal.frames.at(i);
+		const frame_real_t& frame = signal.samples.at(i);
 
 		file << frame.left_sample << "," << frame.right_sample << "\n";
 
