@@ -153,18 +153,18 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 	switch (atd.state) {
 	case AudioThreadState::PLAYING:
 		// populate the wave
-		for (size_t i = 0; i < atd.wave.size(); i++) {
+		for (size_t i = 0; i < atd.wave.samples.size(); i++) {
 			// loop the audio
-			if (atd.sample_index >= atd.signal->frames.size()) {
+			if (atd.sample_index >= atd.signal->samples.size()) {
 				atd.sample_index = 0;
 			}
 
-			atd.wave.at(i) = atd.signal->frames.at(atd.sample_index);
+			atd.wave.samples.at(i) = atd.signal->samples.at(atd.sample_index);
 			atd.sample_index++;
 		}
 
 		// apply effects to the wave
-		for (dsp::Frame<dsp::sample_t>& curr_frame : atd.wave) {
+		for (dsp::Frame<dsp::sample_t>& curr_frame : atd.wave.samples) {
 			// is the amplitude scalar applied before or after effects? It probably doesn't matter...
 			// at least not for filters
 			curr_frame.left_sample  *= atd.amplitude_scalar;
@@ -172,8 +172,8 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 		}
 
 		// copy wave into output buffer
-		for (size_t i = 0; i < atd.wave.size(); i++) {
-			const dsp::Frame<dsp::sample_t>& curr_frame = atd.wave.at(i);
+		for (size_t i = 0; i < atd.wave.samples.size(); i++) {
+			const dsp::Frame<dsp::sample_t>& curr_frame = atd.wave.samples.at(i);
 
 			if (i * dsp::NUM_CHANNELS + 1 < out_buf_len) {
 				out_buf[i * dsp::NUM_CHANNELS]     = curr_frame.left_sample;
@@ -249,7 +249,7 @@ bool process_message(AudioThreadData& atd, const stac::lfmq::Message<>& msg) {
 bool process_play_message(AudioThreadData& atd, const dsp::time_ms_t time) {
 	const size_t sample_index = dsp::utils::sample_index_from_time(atd.signal->sample_rate, time);
 
-	if (sample_index >= atd.signal->frames.size()) {
+	if (sample_index >= atd.signal->samples.size()) {
 		return false;
 	}
 
@@ -322,7 +322,7 @@ std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_
 				curr_frame.right_sample = in_buffer.at(i + 1);
 			}
 
-			signal.frames.push_back(curr_frame);
+			signal.samples.push_back(curr_frame);
 		}
 	} while (curr_frames_read == NUM_FRAMES_TO_READ);
 
@@ -343,7 +343,7 @@ std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency
 
 	dsp::Signal<dsp::sample_t> signal(sample_rate);
 	try {
-		signal.frames.reserve(num_samples_in_signal);
+		signal.samples.reserve(num_samples_in_signal);
 	} catch (std::bad_alloc& e) {
 		// the requested buffer size was too large to allocate
 		return std::nullopt;
@@ -354,7 +354,7 @@ std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(const dsp::frequency
 	for (size_t sample_index = 0; sample_index < num_samples_in_signal; sample_index++) {
 		curr_sample = static_cast<dsp::sample_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
 
-		signal.frames.emplace_back(curr_sample, curr_sample);
+		signal.samples.emplace_back(curr_sample, curr_sample);
 	}
 
 	return signal;
