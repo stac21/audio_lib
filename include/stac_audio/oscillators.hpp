@@ -11,19 +11,22 @@
 namespace stac {
 template<typename _sample_t>
 dsp::Signal<_sample_t> generate_sin_signal(const dsp::frequency_hz_t frequency, const dsp::sample_rate_t sample_rate) {
-	dsp::Signal<_sample_t> signal(sample_rate);
+	dsp::Signal<_sample_t> signal;
+	signal.sample_rate = sample_rate;
+
 	const dsp::time_t period = 1.0 / frequency * 1000.0;
 	const size_t num_samples = dsp::utils::sample_index_from_time(sample_rate, period);
 	std::cout << "period: " << period << ", num_samples: " << num_samples << "\n";
 
-	signal.frames.reserve(num_samples);
+	signal.samples.reserve(num_samples);
 
-	_sample_t curr_sample = 0.0;
+	using s = typename decltype(signal)::sample_type::sample_type;
+	s curr_sample = {};
 
 	for (size_t sample_index = 0; sample_index < num_samples; sample_index++) {
-		curr_sample = static_cast<_sample_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
+		curr_sample = static_cast<s>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
 
-		signal.frames.emplace_back(curr_sample, curr_sample);
+		signal.samples.emplace_back(curr_sample, curr_sample);
 	}
 
 	return signal;
@@ -42,7 +45,7 @@ dsp::Signal<_sample_t> generate_sawtooth_signal(const dsp::frequency_hz_t fundam
 	dsp::Signal<_sample_t> signal(sample_rate);
 
 	// TODO reserve proper num frames and calculate proper num samples
-	signal.frames.reserve(1);
+	signal.samples.reserve(1);
 	size_t num_samples = 1;
 
 	_sample_t curr_sample = 0.0;

@@ -37,9 +37,6 @@ bool process_stop_message(AudioThreadData& atd);
 bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::frame_real_t>* signal_ptr);
 std::optional<dsp::Signal<dsp::frame_real_t>> read_snd_file(const std::string& file_path);
 std::optional<dsp::Signal<dsp::frame_real_t>> generate_sin_wave(dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
-bool process_effect_added(AudioThreadData& atd, const dsp::Signal<dsp::sample_t>* signal_ptr);
-std::optional<dsp::Signal<dsp::sample_t>> read_snd_file(const std::string& file_path);
-std::optional<dsp::Signal<dsp::sample_t>> generate_sin_wave(dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate, dsp::time_ms_t duration);
 void display_options();
 stac::lfmq::MessageType process_user_input();
 stac::lfmq::SpscQueue<stac::lfmq::Message<>, 10> g_message_queue;
@@ -56,13 +53,13 @@ int main() {
 	}
 
 	auto gen_sin_wave = [](dsp::frequency_hz_t frequency, dsp::sample_rate_t sample_rate) {
-		return stac::generate_sin_signal<dsp::sample_t>(frequency, sample_rate);
+		return stac::generate_sin_signal<dsp::frame_real_t>(frequency, sample_rate);
 	};
 	// std::optional<stac::Instrument<dsp::sample_t>> instrument = stac::Instrument<dsp::sample_t>::create(gen_sin_wave, dsp::SAMPLE_RATE, 1000);
 	stac::Tone tone;
 	tone.set_note(stac::Note::A);
 	tone.set_octave(stac::Octave::FOUR);
-	dsp::Signal<dsp::sample_t> sin_signal = stac::generate_sin_signal<dsp::sample_t>(tone.frequency(), dsp::SAMPLE_RATE);
+	dsp::Signal<dsp::frame_real_t> sin_signal = stac::generate_sin_signal<dsp::frame_real_t>(tone.frequency(), dsp::DEFAULT_SAMPLE_RATE);
 	static constexpr char sin_signal_path[] = "C:/Users/Mynam/source/repos/audio_lib/plots/sin_signal.sig";
 	// static constexpr char sin_signal_path[] = "/home/grant/projects/git/audio_lib/plots/sin_signal.sig";
 	dsp::utils::WriteResult result = dsp::utils::write_signal_to_file(sin_signal, sin_signal_path);
