@@ -1,23 +1,11 @@
 #pragma once
 
-#include <functional>
 #include <vector>
 #include <array>
-#include <span>
-#include <tuple>
-#include <type_traits>
 
 #include "dsp_declarations.hpp"
 
 namespace dsp {
-template<typename _sample_t>
-struct Frame {
-	using sample_type = _sample_t;
-
-	_sample_t left_sample  = SAMPLE_SILENCE;
-	_sample_t right_sample = SAMPLE_SILENCE;
-};
-
 enum class CapacityType : bool {
 	dynamic = false,
 	fixed   = true

@@ -57,7 +57,7 @@ WriteResult write_signal_to_file(const Signal<_sample_t, _capacity>& signal, con
 	for (size_t i = 0; i < signal.samples.size(); i++) {
 		static constexpr size_t num_frames_to_write_before_flushing = 50;
 
-		const dsp::Frame<_sample_t>& frame = signal.samples.at(i);
+		const frame_real_t& frame = signal.samples.at(i);
 
 		file << frame.left_sample << "," << frame.right_sample << "\n";
 
