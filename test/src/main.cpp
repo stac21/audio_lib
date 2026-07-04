@@ -116,7 +116,7 @@ int main() {
 
 	sf_count_t curr_frames_read = 0;
 	constexpr sf_count_t NUM_FRAMES_TO_READ = 256;
-	std::array<dsp::sample_t, NUM_FRAMES_TO_READ> buffer;
+	std::array<dsp::sample_real_t, NUM_FRAMES_TO_READ> buffer;
 	// these are doubles for the purposes of the fftw demo, but in "production" I need
 	// to figure out the best way to convert between dsp::sample_t and the double
 	// which fftw expects for their functions. Maybe just make dsp::sample_t a double

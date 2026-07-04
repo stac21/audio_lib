@@ -139,10 +139,10 @@ int32_t audio_thread_callback(const void* input_buffer, void* output_buffer,
 	}
 
 	AudioThreadData& atd = *static_cast<AudioThreadData*>(user_data);
-	dsp::sample_t* const out_buf = static_cast<dsp::sample_t*>(output_buffer);
+	dsp::sample_real_t* const out_buf = static_cast<dsp::sample_real_t*>(output_buffer);
 	const size_t out_buf_len = frames_per_buffer * dsp::NUM_CHANNELS;
 	// size in bytes of out_buf
-	const size_t out_buf_size = sizeof(dsp::sample_t) * out_buf_len;
+	const size_t out_buf_size = sizeof(dsp::sample_real_t) * out_buf_len;
 
 	process_messages(atd, 1);
 
@@ -271,8 +271,8 @@ bool process_pause_message(AudioThreadData& atd) {
 
 bool process_volume_message(AudioThreadData& atd) {
 	// toggle the mute status of the audio stream
-	atd.amplitude_scalar = (static_cast<dsp::sample_t>(std::abs(atd.amplitude_scalar - 1.0))
-	                        <= std::numeric_limits<dsp::sample_t>::epsilon()) ? 0.0 : 1.0;
+	atd.amplitude_scalar = (static_cast<dsp::sample_real_t>(std::abs(atd.amplitude_scalar - 1.0))
+	                        <= std::numeric_limits<dsp::sample_real_t>::epsilon()) ? 0.0 : 1.0;
 
 	return true;
 }
@@ -307,7 +307,7 @@ std::optional<dsp::Signal<dsp::frame_real_t>> read_snd_file(const std::string& f
 
 	sf_count_t curr_frames_read = 0;
 	constexpr sf_count_t NUM_FRAMES_TO_READ = 256;
-	std::array<dsp::sample_t, NUM_FRAMES_TO_READ> in_buffer = {};
+	std::array<dsp::sample_real_t, NUM_FRAMES_TO_READ> in_buffer = {};
 	dsp::frame_real_t curr_frame;
 
 	do {
@@ -349,10 +349,10 @@ std::optional<dsp::Signal<dsp::frame_real_t>> generate_sin_wave(const dsp::frequ
 		return std::nullopt;
 	}
 
-	dsp::sample_t curr_sample = 0.0;
+	dsp::sample_real_t curr_sample = 0.0;
 
 	for (size_t sample_index = 0; sample_index < num_samples_in_signal; sample_index++) {
-		curr_sample = static_cast<dsp::sample_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
+		curr_sample = static_cast<dsp::sample_real_t>(std::sin(frequency * 2 * std::numbers::pi * (static_cast<double>(sample_index) / sample_rate)));
 
 		signal.samples.emplace_back(curr_sample, curr_sample);
 	}
