@@ -16,13 +16,6 @@ struct Frame {
 
 	_sample_t left_sample  = SAMPLE_SILENCE;
 	_sample_t right_sample = SAMPLE_SILENCE;
-
-	constexpr Frame() noexcept = default;
-
-	constexpr Frame(const _sample_t left_sample, const _sample_t right_sample) noexcept :
-		left_sample(left_sample),
-		right_sample(right_sample)
-	{ }
 };
 
 // TODO make this into a class and initialize the class to SAMPLE_SILENCE by default
