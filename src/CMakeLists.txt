@@ -30,6 +30,7 @@ set(
         ${INCLUDE_DIR}/frame.hpp
         ${INCLUDE_DIR}/instrument.hpp
         ${INCLUDE_DIR}/oscillators.hpp
+        ${INCLUDE_DIR}/math.hpp
 )
 
 add_library(${TARGET}
