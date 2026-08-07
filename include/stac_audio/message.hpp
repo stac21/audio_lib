@@ -80,8 +80,8 @@ public:
 	}
 
 private:
-	char   payload[_max_message_size];
+	char   payload[_max_message_size] = {};
 	/// Size of the payload in bytes
-	size_t payload_size;
+	size_t payload_size = 0;
 };
 }
